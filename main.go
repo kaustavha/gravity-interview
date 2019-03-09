@@ -14,12 +14,11 @@ func APIHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Define our struct
 type authenticationMiddleware struct {
 	tokenUsers map[string]string
 }
 
-// Initialize it somewhere
+// TODO
 func (amw *authenticationMiddleware) Populate() {
 	amw.tokenUsers = make(map[string]string)
 	amw.tokenUsers["00000000"] = "user0"
@@ -28,6 +27,7 @@ func (amw *authenticationMiddleware) Populate() {
 // Middleware function, which will be called for each request
 func (amw *authenticationMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO
 		next.ServeHTTP(w, r)
 		token := r.Header.Get("X-Session-Token")
 
