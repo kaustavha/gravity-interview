@@ -37,6 +37,8 @@ The `create-react-app` development server has a proxy setting set in `package.js
 
 The server is written in Go and will use:
 - gorilla/mux for route handling
+- gorilla/websocket for db poll
+- gorm as the orm
 
 
 # TODO
@@ -56,4 +58,5 @@ The server is written in Go and will use:
     - post handler from fakeiot data generator
     - database & orm for storing fakeiot data
     - edge case/bad data handling from fakeiot generator
+    - figure out proper use of bearer tokens and CA certs for fakeiot
     -  1 unit test
