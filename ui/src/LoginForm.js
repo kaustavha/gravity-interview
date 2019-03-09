@@ -44,7 +44,7 @@ export default class LoginForm extends React.Component {
     callApi = async () => {
     const response = await fetch('/api');
     if (response.status !== 200) throw Error(response);
-    return body;
+    return response;
     };
 
     render() {

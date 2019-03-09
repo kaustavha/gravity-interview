@@ -22,7 +22,8 @@ go install && $GOPATH/bin/gravitational_interview
 - Frontend
 ```
 cd ui/
-npm run app
+npm i
+npm start
 ```
 
 
