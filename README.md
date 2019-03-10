@@ -28,7 +28,9 @@ npm start
 
 # TLS / CACERT notes
 https://github.com/denji/golang-tls
-Generate private key (.key)
+##### Generate private key (.key)
+
+```sh
 # Key considerations for algorithm "RSA" ≥ 2048-bit
 openssl genrsa -out server.key 2048
 
@@ -36,8 +38,15 @@ openssl genrsa -out server.key 2048
 # https://safecurves.cr.yp.to/
 # List ECDSA the supported curves (openssl ecparam -list_curves)
 openssl ecparam -genkey -name secp384r1 -out server.key
-Generation of self-signed(x509) public key (PEM-encodings .pem|.crt) based on the private (.key)
+```
+
+##### Generation of self-signed(x509) public key (PEM-encodings `.pem`|`.crt`) based on the private (`.key`)
+
+```sh
 openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
+```
+
+---
 
 # Basic Architecture
 The front-end is scaffolded using `create-react-app` and then the interview html and css is added and minimally reactified. 
@@ -51,6 +60,7 @@ The `create-react-app` development server has a proxy setting set in `package.js
 The server is written in Go and will use:
 - gorm as the orm
 
+---
 
 # TODO
 - front-end:
