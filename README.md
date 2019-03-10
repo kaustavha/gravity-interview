@@ -8,7 +8,9 @@ Startup the data generator
 cd $GOPATH
 go get github.com/gravitational/fakeiot
 go install github.com/gravitational/fakeiot
-$GOPATH/bin/fakeiot
+$GOPATH/bin/fakeiot --token="shmoken" --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem test
+
+$GOPATH/bin/fakeiot --token=shmoken --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem run --period=100s --freq=1s --users=100 --account-id="5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
 ```
 
 - Go server
@@ -26,6 +28,16 @@ npm i
 npm start
 ```
 
+- postgres
+```
+docker run -d -p 5432:5432 --name my-postgres -e POSTGRES_PASSWORD=mysecretpassword postgres
+
+psql -h localhost -p 5432 -U postgres -W
+CREATE DATABASE iotdb;
+\l
+\q
+
+```
 
 ---
 

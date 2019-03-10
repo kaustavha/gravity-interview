@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/pborman/uuid"
+	"github.com/jinzhu/gorm"
 	// "github.com/jinzhu/gorm"
 	// _ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -21,6 +21,8 @@ const (
 
 	contentTypeHeader = "Content-Type"
 	contentTypeJSON   = "application/json"
+
+	defaultCookieName = "session_token"
 
 	pemPath = "./fixtures/server-cert.pem"
 	keyPath = "./fixtures/server-key.pem"
@@ -66,32 +68,11 @@ func onSuccesfulUpgrade(w http.ResponseWriter, acc AdminAccount) {
 	}
 }
 
-type DashboardInfo struct {
-	UserCount int `json:"userCount"`
-}
-
-func DashboardHandler(w http.ResponseWriter, r *http.Request) {
-	acc := findUserAccountFromActiveToken(r)
-	acc.Users += 10
-	setAccountInfo(acc)
-	fmt.Println("DashboardHandler")
-
-	dasboardInfo := DashboardInfo{
-		UserCount: acc.Users,
-	}
-
-	w.Header().Set(contentTypeHeader, contentTypeJSON)
-	w.WriteHeader(http.StatusOK)
-	resJSON, err := json.Marshal(dasboardInfo)
-	if err == nil {
-		w.Write(resJSON)
-	}
-}
-
 var sessionTokens []string
 var mySigningKey = []byte("secret")
 
 type AdminAccount struct {
+	gorm.Model
 	Email         string
 	SessionToken  string
 	SessionExpiry time.Time
@@ -166,7 +147,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			IsUpgraded:    false,
 			SessionExpiry: expiry,
 			SessionToken:  tokenString,
-			AccountId:     uuid.New(),
+			AccountId:     defaultAccountID,
 			Users:         0,
 			MaxUsers:      maxUsers,
 		}
@@ -177,7 +158,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessionTokens = append(sessionTokens, tokenString)
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
+		Name:    defaultCookieName,
 		Value:   account.SessionToken,
 		Expires: account.SessionExpiry,
 	})
@@ -201,7 +182,7 @@ func setAccountInfo(acc AdminAccount) {
 
 func findUserAccountFromActiveToken(r *http.Request) AdminAccount {
 	var acc AdminAccount
-	c, err := r.Cookie("session_token")
+	c, err := r.Cookie(defaultCookieName)
 	if err == nil {
 		email, found := sessionMap[c.Value]
 		if found != false {
@@ -214,13 +195,11 @@ func findUserAccountFromActiveToken(r *http.Request) AdminAccount {
 }
 
 func isAuthenticated(r *http.Request) bool {
-	c, err := r.Cookie("session_token")
+	c, err := r.Cookie(defaultCookieName)
 	if err != nil {
 		if err == http.ErrNoCookie {
-			fmt.Println("No Cookie")
 			return false
 		}
-		fmt.Println("err", err)
 		return false
 	}
 	sessionToken := c.Value
@@ -228,7 +207,6 @@ func isAuthenticated(r *http.Request) bool {
 	if found != -1 {
 		return true
 	}
-	fmt.Println("didnt find token", sessionTokens, sessionToken)
 	return false
 }
 
@@ -277,7 +255,6 @@ func hasTokenExpired(expiry time.Time) bool {
 }
 
 func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("AuthcheckHandler hit")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -287,9 +264,18 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			next(w, r)
 			return
 		} else {
+			fmt.Println("Not authorized", r.Header)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+	}
+}
+
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.RequestURI)
+		next(w, r)
+		return
 	}
 }
 
@@ -302,7 +288,9 @@ func cleanupExpiredTokensMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
-	return cleanupExpiredTokensMiddleware(authMiddleware(next))
+	return loggingMiddleware(
+		cleanupExpiredTokensMiddleware(
+			authMiddleware(next)))
 }
 
 func main() {
@@ -310,11 +298,13 @@ func main() {
 	// Create global vars
 	activeAccounts = make(map[string]AdminAccount)
 	sessionMap = make(map[string]string)
+	db, _ = createDBConn()
+	// fmt.Println(createDBConn())
 
-	// db, err := gorm.Open("postgres", "host=myhost port=myport user=gorm dbname=gorm password=mypassword")
-	// defer db.Close()
+	WrappedLoginHandler := loggingMiddleware(cleanupExpiredTokensMiddleware(LoginHandler))
+	WrappedIOTDataHandler := loggingMiddleware(IOTDataHandler)
 
-	http.HandleFunc("/api/login", cleanupExpiredTokensMiddleware(LoginHandler))
+	http.HandleFunc("/api/login", WrappedLoginHandler)
 	http.HandleFunc("/api/logout", applyMiddlewares(LogoutHandler))
 	http.HandleFunc("/api/authcheck", applyMiddlewares(AuthcheckHandler))
 
@@ -323,7 +313,7 @@ func main() {
 	http.HandleFunc("/api/upgrade", applyMiddlewares(UpgradeHandler))
 	http.HandleFunc("/api/upgradecheck", applyMiddlewares(UpgradeCheckHandler))
 
-	http.HandleFunc("/metrics", IOTDataHandler)
+	http.HandleFunc("/metrics", WrappedIOTDataHandler)
 
 	port := os.Getenv("PORT") // TODO - add env vars
 	if port == "" {

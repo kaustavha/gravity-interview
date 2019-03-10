@@ -6,15 +6,19 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 const (
 	defaultBearerToken = "shmoken"
+	defaultAccountID   = "5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
 )
 
 // Metric is a metric send by the iot device
 // every time user logs into it
 type Metric struct {
+	gorm.Model
 	// AccountID is a unique UUID identifying the account
 	AccountID string `json:"account_id"`
 	// UserID is a unique ID identityfing the user
@@ -22,6 +26,12 @@ type Metric struct {
 	UserID string `json:"user_id"`
 	// Timestamp is a time as recorded by the device
 	Timestamp time.Time `json:"timestamp"`
+}
+
+func (m *Metric) SaveInDB() {
+	metricDB := GetDB()
+	dbconn := metricDB.getConn()
+	dbconn.Create(&m)
 }
 
 // String returns debug-friendly representation of the metric
@@ -79,6 +89,8 @@ func IOTDataHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	metric.SaveInDB()
 
 	w.WriteHeader(http.StatusOK)
 }
