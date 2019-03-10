@@ -11,23 +11,22 @@ import './App.css';
 class App extends Component {
   render() {
     return (
-  <BrowserRouter>
-      <div>
-        <header>
-          <meta charSet="UTF-8" />
-          <title>User Management Challenge</title>
-          <meta name="Kostco" content="Gravitational, Inc." />
-        </header>
+      <BrowserRouter>
+          <div>
+            <header>
+              <meta charSet="UTF-8" />
+              <title>User Management Challenge</title>
+              <meta name="Kostco" content="Gravitational, Inc." />
+            </header>
 
-        <Route exact path="/" component={LoginForm} />
-        <Route path="/login" component={LoginForm} />
-        <Route path="/dashboard" component={Dashboard} />
-      </div>
+            <Route exact path="/" component={LoginForm} />
+            <Route path="/login" component={LoginForm} />
+            <Route path="/dashboard" component={Dashboard} />
+          </div>
 
-    </BrowserRouter>
+        </BrowserRouter>
     )
   }
 }
-
 
 export default App;

@@ -1,5 +1,9 @@
 import React from 'react';
-import { Redirect } from "react-router-dom";
+import {
+    callAuthcheckApi,
+    callLoginApi,
+    RouterHack
+} from "./api";
 
 export default class LoginForm extends React.Component {
     constructor(props) {
@@ -12,6 +16,12 @@ export default class LoginForm extends React.Component {
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+
+        callAuthcheckApi().then(res => {
+            if (res) {
+                this.setState({loginSuccess: true});
+            }
+        })
     }
 
     handleChange(event) {
@@ -28,50 +38,36 @@ export default class LoginForm extends React.Component {
         return (email.length > 0 && pass.length > 0);
     }
 
-    handleSubmit(event) {
+    handleSubmit = async () => {
         if (this._isInputValid()) {
-            this.callApi()
-                .then(() => this.setState({loginSuccess: true}))
-                .catch((err) => {
-                    alert('login failed');
-                    this.setState({redirectToReferrer: true});
-                });
-        } else {
-            this.setState({redirectToReferrer: true});
+            const res = await callLoginApi(this.state.email, this.state.password);
+            if (res) {
+                this.setState({loginSuccess: true});
+            } else {
+                this.setState({redirectToReferrer: true});
+            }
         }
     }
 
-    callApi = async () => {
-    const response = await fetch('/api');
-    if (response.status !== 200) throw Error(response);
-    return response;
-    };
-
     render() {
-        let { redirectToReferrer, loginSuccess } = this.state;
-
-        if (redirectToReferrer) {
-            return <Redirect to='/login' />;
-        } else if (loginSuccess) {
-            return <Redirect to='/dashboard' push />;
-        }
         return (
-            <form className="login-form" onSubmit={this.handleSubmit}>
-                <h1>Sign Into Your Account</h1>
-        
-                <div>
-                    <label htmlFor="email">Email Address</label>
-                    <input type="email" id="email" className="field" name="email" value={this.state.value} onChange={this.handleChange} />
-                </div>
-        
-                <div>
-                    <label htmlFor="password">Password</label>
-                    <input type="password" id="password" className="field" name="password" onChange={this.handleChange} />
-                </div>
-                <input type="button" value="Login to my Dashboard" className="button block" onClick={this.handleSubmit} > 
-
-            </input>
-            </form>
+            <div>
+                <RouterHack redirectToReferrer={this.state.redirectToReferrer} loginSuccess={this.state.loginSuccess}/>
+                <form className="login-form" onSubmit={this.handleSubmit}>
+                    <h1>Sign Into Your Account</h1>
+            
+                    <div>
+                        <label htmlFor="email">Email Address</label>
+                        <input type="email" id="email" className="field" name="email" value={this.state.value} onChange={this.handleChange} />
+                    </div>
+            
+                    <div>
+                        <label htmlFor="password">Password</label>
+                        <input type="password" id="password" className="field" name="password" onChange={this.handleChange} />
+                    </div>
+                    <input type="button" value="Login to my Dashboard" className="button block" onClick={this.handleSubmit} />
+                </form>
+            </div>
         )
     }
 }
