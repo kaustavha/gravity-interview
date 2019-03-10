@@ -24,17 +24,19 @@ export default class Dashboard extends React.Component {
 
         callAuthcheckApi().then(res => {
             if (res) {
-                callUpgradeCheckApi().then(res => {
-                    if (res) {
-                        res.json().then(resJson => {
-                            this.setState({
-                                isAccountUpgraded: resJson.IsUpgraded,
-                                userLimit: resJson.MaxUsers,
-                                userCount: resJson.Users
-                            })
+                callUpgradeCheckApi().then(resJson => {
+                    if (resJson) {
+                        this.setState({
+                            isAccountUpgraded: resJson.IsUpgraded,
+                            userLimit: resJson.MaxUsers,
+                            userCount: resJson.Users
+                        })
+                        this.updateDashboard();
+                    } else {
+                        this.setState({
+                            redirectToReferrer: true
                         })
                     }
-                    this.updateDashboard();
                 })
             } else {
                 this.setState({redirectToReferrer: true});
@@ -43,27 +45,27 @@ export default class Dashboard extends React.Component {
     }
 
     updateDashboard() {
-        callDashboardApi().then(res => {
-            if (res) {
-                res.json()
-                .then(resJson => {
-                    
-                    if (resJson.userCount < this.state.userLimit) {
+        callDashboardApi().then(resJson => {
+            if (resJson) {
+                
+                if (resJson.userCount < this.state.userLimit) {
 
-                        this.setState({
-                            userCount: resJson.userCount,
-                            currentlyUpdatingDB: true
-                        });
-                        setTimeout(this.updateDashboard.bind(this), 1000);
-                    } else {
-                        this.setState({
-                            userCount: resJson.userCount,
-                            currentlyUpdatingDB: false
-                        });
-                    }
-                    
+                    this.setState({
+                        userCount: resJson.userCount,
+                        currentlyUpdatingDB: true
+                    });
+                    setTimeout(this.updateDashboard.bind(this), 1000);
+                } else {
+                    this.setState({
+                        userCount: resJson.userCount,
+                        currentlyUpdatingDB: false
+                    });
+                }
+            } else {
+                this.setState({
+                    redirectToReferrer: true
                 })
-                .catch(e => console.log('Error calling db api', e))
+                console.log('update db fail')
             }
         })
     }
@@ -71,17 +73,15 @@ export default class Dashboard extends React.Component {
     handleLogout = async () => {
         return callLogoutApi()
         .then(res => {
-            if (res) {
-                this.setState({redirectToReferrer: true});
-            }
+            this.setState({
+                redirectToReferrer: true
+            })
         })
-        .catch(e => console.log('Error calling db api', e))
     }
 
     handleUpgrade = async () => {
-        return callUpgradeApi().then(res => {
-            if (res) {
-                res.json().then(resJson => {
+        return callUpgradeApi().then(resJson => {
+            if (resJson) {
                     this.setState({
                         isAccountUpgraded: resJson.IsUpgraded,
                         userLimit: resJson.MaxUsers,
@@ -90,8 +90,11 @@ export default class Dashboard extends React.Component {
                     if (!this.state.currentlyUpdatingDB) {
                         this.updateDashboard();
                     }
-                })
-            }
+                } else {
+                    this.setState({
+                        redirectToReferrer: true
+                    })
+                }
         })
     }
 

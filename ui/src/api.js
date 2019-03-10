@@ -38,7 +38,7 @@ class RouterHack extends React.Component {
     }
 }
 
-const _callApi = async (url, extensions) => {
+const _callApi = async (url, extensions, parseResults=false) => {
     const response = await fetch(`/api/${url}`, Object.assign({
         headers: {
             Accept: 'application/json',
@@ -48,13 +48,23 @@ const _callApi = async (url, extensions) => {
     }, extensions));
 
     if (response.status === 200) {
-        return response
+        if (parseResults) {
+            try {
+                let finalResults = await response.json()
+                return finalResults
+            } catch (e) {
+                console.log('Status Body parse error: ', url, '\n', response);
+                return false
+            }
+        } else {
+            return response
+        }
     }
     console.log('Status NotOk: ', url, '\n', response);
     return false;
 }
 
-const _get = async (url) => _callApi(url, {method: 'get'});
+const _get = async (url, parseResults) => _callApi(url, {method: 'get'}, parseResults);
 
 const callLoginApi = async (email, password) => _callApi('login', {
     method: 'post',
@@ -65,10 +75,10 @@ const callLoginApi = async (email, password) => _callApi('login', {
 })
 
 const callAuthcheckApi = async () => _get('authcheck')
-const callUpgradeApi = async () => _get('upgrade')
-const callUpgradeCheckApi = async () => _get('upgradecheck')
-const callDashboardApi = async () => _get('dashboard')
-const callLogoutApi = async () => _get('logout')
+const callUpgradeApi = async () => _get('upgrade', true)
+const callUpgradeCheckApi = async () => _get('upgradecheck', true)
+const callDashboardApi = async () => _get('dashboard', true)
+const callLogoutApi = async () => _get('logout', true)
 
 const callApi = async () => {
     const response = await fetch('/api');

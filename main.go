@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
 )
 
 const (
 	maxUsers         = 100
 	maxUsersUpgraded = 1000
+	defaultPort      = ":443"
 )
 
 // Here we are implementing the NotImplemented handler. Whenever an API endpoint is hit
@@ -27,7 +27,6 @@ var NotImplemented = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	acc := findUserAccountFromActiveToken(r)
 	cleanToken(acc)
-	w.WriteHeader(http.StatusOK)
 	onSuccesfulUpgrade(w, acc)
 }
 
@@ -44,11 +43,7 @@ func UpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpgradeCheckHandler(w http.ResponseWriter, r *http.Request) {
 	acc := findUserAccountFromActiveToken(r)
-	if acc.IsUpgraded {
-		onSuccesfulUpgrade(w, acc)
-		return
-	}
-	w.WriteHeader(http.StatusUnprocessableEntity)
+	onSuccesfulUpgrade(w, acc)
 }
 
 func onSuccesfulUpgrade(w http.ResponseWriter, acc AdminAccount) {
@@ -67,8 +62,6 @@ func IOTDataHandler(w http.ResponseWriter, r *http.Request) {
 type DashboardInfo struct {
 	UserCount int `json:"userCount"`
 }
-
-// var dasboardInfo = DashboardInfo{}
 
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	acc := findUserAccountFromActiveToken(r)
@@ -89,7 +82,6 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var sessionTokens []string
-
 var mySigningKey = []byte("secret")
 
 type AdminAccount struct {
@@ -142,9 +134,15 @@ func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
 // StatusOK if already signed in, or after signin based on incoming cookie or email+password
 // otherwise frontend needs to prompt for usrname and pass and try again
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+
+	if isAuthenticated(r) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	creds, status := decodeAndCheckCreds(r)
 	if status != http.StatusOK {
 		w.WriteHeader(status)
+		return
 	}
 
 	account, found := activeAccounts[creds.Email]
@@ -223,7 +221,7 @@ func isAuthenticated(r *http.Request) bool {
 	if found != -1 {
 		return true
 	}
-	fmt.Println("not found token", sessionTokens, sessionToken)
+	fmt.Println("didnt find token", sessionTokens, sessionToken)
 	return false
 }
 
@@ -271,43 +269,33 @@ func hasTokenExpired(expiry time.Time) bool {
 	return hasPassed
 }
 
-func APIHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("api hit")
-	w.WriteHeader(http.StatusOK)
-}
-
 func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("AuthcheckHandler hit")
 	w.WriteHeader(http.StatusOK)
 }
 
-func authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Only login route doesnt need auth
-		dest := r.RequestURI
-		fmt.Println(dest)
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if isAuthenticated(r) {
-			if dest == "/api/login" {
-				w.WriteHeader(http.StatusOK)
-			} else {
-				next.ServeHTTP(w, r)
-			}
+			next(w, r)
 			return
-		}
-
-		if dest == "/api/login" {
-			next.ServeHTTP(w, r)
 		} else {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
-	})
+	}
 }
 
-func cleanupExpiredTokensMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func cleanupExpiredTokensMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		cleanupExpiredTokens(expected)
-		next.ServeHTTP(w, r)
-	})
+		next(w, r)
+		return
+	}
+}
+
+func applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
+	return cleanupExpiredTokensMiddleware(authMiddleware(next))
 }
 
 func main() {
@@ -316,29 +304,27 @@ func main() {
 	sessionMap = make(map[string]string)
 
 	fmt.Println("App boot up...")
-	router := mux.NewRouter()
 
-	router.Use(authMiddleware)
-	router.Use(cleanupExpiredTokensMiddleware)
+	http.HandleFunc("/api/login", cleanupExpiredTokensMiddleware(LoginHandler))
+	http.HandleFunc("/api/logout", applyMiddlewares(LogoutHandler))
+	http.HandleFunc("/api/authcheck", applyMiddlewares(AuthcheckHandler))
 
-	router.HandleFunc("/api", APIHandler)
-	router.HandleFunc("/api/login", LoginHandler)
-	router.HandleFunc("/api/logout", LogoutHandler)
-	router.HandleFunc("/api/authcheck", AuthcheckHandler)
+	http.HandleFunc("/api/dashboard", applyMiddlewares(DashboardHandler))
 
-	router.HandleFunc("/api/dashboard", DashboardHandler)
+	http.HandleFunc("/api/upgrade", applyMiddlewares(UpgradeHandler))
+	http.HandleFunc("/api/upgradecheck", applyMiddlewares(UpgradeCheckHandler))
 
-	router.HandleFunc("/api/upgrade", UpgradeHandler)
-	router.HandleFunc("/api/upgradecheck", UpgradeCheckHandler)
-
-	router.HandleFunc("/metrics", IOTDataHandler)
+	http.HandleFunc("/metrics", IOTDataHandler)
 
 	port := os.Getenv("PORT") // TODO - add env vars
 	if port == "" {
-		port = "8000"
+		port = defaultPort
 	}
 
 	fmt.Println(port)
 
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	err := http.ListenAndServeTLS(port, "server.crt", "server.key", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
