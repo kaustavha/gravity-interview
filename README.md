@@ -25,42 +25,18 @@ cd ui/
 npm i
 npm start
 ```
-$GOPATH/bin/fakeiot --token=shmoken --url="https://127.0.0.1:8443" --ca-cert="./cert.pem" run --period=10s --freq=1s --users=100
+
+
+---
+
 # TLS / CACERT notes
- openssl req -out cert.csr -newkey rsa:2048 -nodes -keyout cert.key -config san.cnf
- 
+
+Using the mock cert and keys from gravitational/fakeiot. 
+We'll need to copy over the fixtures dir into this projects root.   
 ```
-openssl req -out cert.csr -newkey rsa:2048 -nodes -keyout cert.key -config san.cnf -extensions 'v3_req'
+$GOPATH/bin/fakeiot --token="shmoken" --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem test
 
- openssl req -out cert.csr -newkey rsa:2048 -nodes -keyout cert.key -config san.cnf
- openssl req -noout -text -in cert.csr | grep DNS
-
- openssl x509 -req -days 365 -in cert.csr -signkey cert.key -out cert.pem
-
-
-openssl req -x509 -nodes -days 730 -newkey rsa:2048 -in cert.csr -keyout cert.key -out cert.pem -config san.cnf -extensions 'v3_req'
-```
-
-Gemerating to work with fake iot
-https://support.citrix.com/article/CTX135602
-
-https://github.com/denji/golang-tls
-##### Generate private key (.key)
-
-```sh
-# Key considerations for algorithm "RSA" ≥ 2048-bit
-openssl genrsa -out server.key 2048
-
-# Key considerations for algorithm "ECDSA" (X25519 || ≥ secp384r1)
-# https://safecurves.cr.yp.to/
-# List ECDSA the supported curves (openssl ecparam -list_curves)
-openssl ecparam -genkey -name secp384r1 -out server.key
-```
-
-##### Generation of self-signed(x509) public key (PEM-encodings `.pem`|`.crt`) based on the private (`.key`)
-
-```sh
-openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
+$GOPATH/bin/fakeiot --token=shmoken --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem run --period=10s --freq=1s --users=10
 ```
 
 ---

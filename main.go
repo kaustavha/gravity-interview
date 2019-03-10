@@ -15,11 +15,18 @@ import (
 )
 
 const (
-	maxUsers          = 100
-	maxUsersUpgraded  = 1000
-	defaultPort       = ":8443"
+	maxUsers         = 100
+	maxUsersUpgraded = 1000
+	defaultPort      = ":8443"
+
 	contentTypeHeader = "Content-Type"
 	contentTypeJSON   = "application/json"
+
+	pemPath = "./fixtures/server-cert.pem"
+	keyPath = "./fixtures/server-key.pem"
+
+	defaultHashedPass = "$2a$14$JMgUM09OV3HPAMKNM9nnb.wghzq5ayYRe91li1j9uqc9pGxU0kQX2"
+	defaultEmail      = "a@a.com"
 )
 
 // Here we are implementing the NotImplemented handler. Whenever an API endpoint is hit
@@ -57,13 +64,6 @@ func onSuccesfulUpgrade(w http.ResponseWriter, acc AdminAccount) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(resJSON)
 	}
-}
-
-func IOTDataHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r)
-
-	w.Header().Set(contentTypeHeader, contentTypeJSON)
-	NotImplemented(w, r)
 }
 
 type DashboardInfo struct {
@@ -113,8 +113,8 @@ type Credentials struct {
 }
 
 var expected = Credentials{
-	Email:    "a@a.com",
-	Password: "$2a$14$JMgUM09OV3HPAMKNM9nnb.wghzq5ayYRe91li1j9uqc9pGxU0kQX2",
+	Email:    defaultEmail,
+	Password: defaultHashedPass,
 }
 
 func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
@@ -332,7 +332,7 @@ func main() {
 
 	fmt.Println(port)
 
-	err := http.ListenAndServeTLS(port, "cert.pem", "cert.key", nil)
+	err := http.ListenAndServeTLS(port, pemPath, keyPath, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
