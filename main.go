@@ -10,12 +10,16 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pborman/uuid"
+	// "github.com/jinzhu/gorm"
+	// _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 const (
-	maxUsers         = 100
-	maxUsersUpgraded = 1000
-	defaultPort      = ":443"
+	maxUsers          = 100
+	maxUsersUpgraded  = 1000
+	defaultPort       = ":8443"
+	contentTypeHeader = "Content-Type"
+	contentTypeJSON   = "application/json"
 )
 
 // Here we are implementing the NotImplemented handler. Whenever an API endpoint is hit
@@ -56,6 +60,9 @@ func onSuccesfulUpgrade(w http.ResponseWriter, acc AdminAccount) {
 }
 
 func IOTDataHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r)
+
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	NotImplemented(w, r)
 }
 
@@ -73,7 +80,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		UserCount: acc.Users,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeHeader, contentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	resJSON, err := json.Marshal(dasboardInfo)
 	if err == nil {
@@ -299,11 +306,13 @@ func applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func main() {
+	fmt.Println("App boot up...")
 	// Create global vars
 	activeAccounts = make(map[string]AdminAccount)
 	sessionMap = make(map[string]string)
 
-	fmt.Println("App boot up...")
+	// db, err := gorm.Open("postgres", "host=myhost port=myport user=gorm dbname=gorm password=mypassword")
+	// defer db.Close()
 
 	http.HandleFunc("/api/login", cleanupExpiredTokensMiddleware(LoginHandler))
 	http.HandleFunc("/api/logout", applyMiddlewares(LogoutHandler))
@@ -323,7 +332,7 @@ func main() {
 
 	fmt.Println(port)
 
-	err := http.ListenAndServeTLS(port, "server.crt", "server.key", nil)
+	err := http.ListenAndServeTLS(port, "cert.pem", "cert.key", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
