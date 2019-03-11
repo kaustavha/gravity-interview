@@ -14,7 +14,7 @@ CREATE DATABASE iotdb;
 
 ```
 
-1. Go server
+2. Go server
 ```
 cd $GOPATH
 // git clone this repo into src or install it similiar to fakeiot against the github url via go get
@@ -27,15 +27,14 @@ go install github.com/jinzhu/gorm
 go install && $GOPATH/bin/gravitational_interview
 ```
 
-1. Frontend
+3. Frontend
 ```
 cd ui/
 npm i
 npm start
 ```
 
-
-1. FakeIOT:
+4. FakeIOT:
 Startup the data generator
 ```
 cd $GOPATH
@@ -46,7 +45,9 @@ $GOPATH/bin/fakeiot --token="shmoken" --url="https://127.0.0.1:8443" --ca-cert=.
 
 $GOPATH/bin/fakeiot --token=shmoken --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem run --period=100s --freq=1s --users=100 --account-id="5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
 ```
-If the server is running you should see some output, also if youre logging into a DB you should see it update.
+
+If the server is running you should see some output, also if youre logging into a DB you should see it update.  
+
 ---
 
 # TLS / CACERT notes
@@ -70,10 +71,10 @@ Also using regular CSS.
 
 The `create-react-app` development server has a proxy setting set in `package.json` to forward unknown routes to through to the backend running on `:8000`.  
 
-We store the admin account and its usercount, upgrade status etc in the DB
-The server listens for posts from metrics and stores them in a table, and updates the admin account every time
+We store the admin account and its usercount, upgrade status etc in the DB  
+The server listens for posts from metrics and stores them in a table, and updates the admin account every time  
 
-The server is written in Go and used gorm
+The server is written in Go and used gorm  
 
 ---
 
