@@ -120,7 +120,7 @@ export default class Dashboard extends React.Component {
                     <footer>
                         <button className="button is-error" onClick={this.handleLogout}>Log Out</button>
                         {
-                            !this.state.isAccountUpgraded &&
+                            !this.state.isAccountUpgraded && this.state.userCount >= this.state.userLimit &&
                             <button className="button is-success" onClick={this.handleUpgrade}>Upgrade to Enterprise Plan</button>
                         }
                         
