@@ -11,14 +11,17 @@ type DashboardInfo struct {
 
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	acc, found := findUserAccountFromActiveToken(r)
+
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	if acc.Users != acc.CountAssociatedUsers() {
-		acc.Users = acc.CountAssociatedUsers()
-		acc.UpdateSelf()
-		acc.SaveInDB()
+
+	foundDbAcc, dbAcc := GetDB().findAdmin(acc.AccountId)
+	if foundDbAcc {
+		if dbAcc.Users != acc.Users {
+			dbAcc.UpdateSelf()
+		}
 	}
 
 	dasboardInfo := DashboardInfo{

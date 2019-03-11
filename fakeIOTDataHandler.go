@@ -32,6 +32,17 @@ func (m *Metric) SaveInDB() {
 	metricDB := GetDB()
 	dbconn := metricDB.getConn()
 	dbconn.Create(&m)
+	m.AddToAssociatedAdminAccount()
+}
+
+func (m *Metric) AddToAssociatedAdminAccount() {
+	metricDB := GetDB()
+	found, admin := metricDB.findAdmin(m.AccountID)
+	if found == true {
+		admin.Users++
+		admin.UpdateSelf()
+		admin.SaveInDB()
+	}
 }
 
 // String returns debug-friendly representation of the metric

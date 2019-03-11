@@ -2,25 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
-
-type AdminAccount struct {
-	gorm.Model
-	Email           string
-	SessionToken    string
-	SessionExpiry   time.Time
-	Password        string
-	IsUpgraded      bool
-	AccountId       string
-	Users           int
-	MaxUsers        int
-	AssociatedUsers []Metric
-}
 
 type Credentials struct {
 	Email    string `json:"email"`
@@ -30,50 +14,14 @@ type Credentials struct {
 var expected Credentials
 var mySigningKey []byte
 
+// map of email -> Adminaccs
 var activeAccounts map[string]AdminAccount
 
 // map session -> email for lookup in activeAccounts map
 var sessionMap map[string]string
+
+// set of active session token strings
 var sessionTokens []string
-
-func (a *AdminAccount) SaveInDB() {
-	metricDB := GetDB()
-	dbconn := metricDB.getConn()
-	found, accOrig := metricDB.findAdmin(a.AccountId)
-
-	fmt.Println("SAVE", found, accOrig.Users, a.Users)
-
-	if dbconn.NewRecord(a) && found != true {
-		dbconn.Create(&a)
-	} else {
-		metricDB.updateById(*a)
-		// dbconn.Update(&a)
-	}
-
-	found, accOrig = metricDB.findAdmin(a.AccountId)
-
-	fmt.Println("SAVE", found, accOrig.Users)
-}
-
-func (a *AdminAccount) CountAssociatedUsers() int {
-	metricDB := GetDB()
-	c := metricDB.countAllUniqueUsersInAccount(a.AccountId)
-	return c
-}
-
-func (a *AdminAccount) hasTokenExpired() bool {
-	now := time.Now()
-	hasPassed := a.SessionExpiry.Before(now)
-	return hasPassed
-}
-
-func (a *AdminAccount) CleanToken() {
-	clearSessionDetails(*a)
-}
-
-func (a *AdminAccount) UpdateSelf() {
-	updateSessionDetails(*a)
-}
 
 func InitAuth() {
 	sessionTokens = []string{}
@@ -114,10 +62,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, found := activeAccounts[creds.Email]
-
 	expiry := time.Now().Add(120 * time.Second)
 	tokenString := getJWT(creds, expiry, mySigningKey)
+
+	// First check active sessions, then search db
+	account, found := activeAccounts[creds.Email]
 	if found {
 		account.SessionToken = tokenString
 		account.SessionExpiry = expiry
@@ -130,7 +79,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			account = AdminAccount{
 				Email:         creds.Email,
-				Password:      creds.Password,
 				IsUpgraded:    false,
 				SessionExpiry: expiry,
 				SessionToken:  tokenString,
@@ -138,6 +86,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				Users:         0,
 				MaxUsers:      maxUsers,
 			}
+			account.Users = acc.CountAssociatedUsers()
 		}
 	}
 
@@ -155,30 +104,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // Helpers
 
-func clearSessionDetails(a AdminAccount) {
-	token := a.SessionToken
-	sessionTokens = deleteAllInSlice(sessionTokens, token)
-	delete(sessionMap, token)
-
-	a.SessionToken = ""
-	a.SessionExpiry = time.Now()
-	activeAccounts[a.Email] = a
-}
-
-func updateSessionDetails(a AdminAccount) {
-	activeAccounts[a.Email] = a
-	if a.SessionToken != "" {
-		sessionMap[a.SessionToken] = a.Email
-		sessionTokens = append(sessionTokens, a.SessionToken)
-	}
-}
-
 func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		// If the structure of the body is wrong, return an HTTP error
-		fmt.Println("body decode err")
 		return creds, http.StatusBadRequest
 	}
 
@@ -205,8 +135,6 @@ func isAuthenticated(r *http.Request) bool {
 	sessionToken := c.Value
 	found := index(sessionTokens, sessionToken)
 	if found != -1 {
-		fmt.Println("found cookie")
-		// fmt.Println(sessionTokens, sessionToken)
 		return true
 	}
 	return false

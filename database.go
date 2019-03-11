@@ -23,7 +23,7 @@ type DB struct {
 
 var db *DB
 
-func createDBConn() {
+func CreateDBConn() {
 	conn, err := gorm.Open("postgres",
 		"host="+dbhost+" "+
 			"port="+dbport+" "+
