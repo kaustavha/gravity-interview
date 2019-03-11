@@ -6,10 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/jinzhu/gorm"
 	// "github.com/jinzhu/gorm"
 	// _ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -23,6 +19,7 @@ const (
 	contentTypeJSON   = "application/json"
 
 	defaultCookieName = "session_token"
+	defaultSigningKey = "mysecretsigningkey"
 
 	pemPath = "./fixtures/server-cert.pem"
 	keyPath = "./fixtures/server-key.pem"
@@ -37,225 +34,35 @@ var NotImplemented = http.HandlerFunc(func(w http.ResponseWriter, r *http.Reques
 	w.Write([]byte("Not Implemented"))
 })
 
-func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	acc := findUserAccountFromActiveToken(r)
-	cleanToken(acc)
-	onSuccesfulUpgrade(w, acc)
-}
-
 func UpgradeHandler(w http.ResponseWriter, r *http.Request) {
-	acc := findUserAccountFromActiveToken(r)
+	acc, found := findUserAccountFromActiveToken(r)
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+	}
 	if acc.IsUpgraded == true {
 		w.WriteHeader(http.StatusLoopDetected)
 		return
 	}
 	acc.IsUpgraded = true
 	acc.MaxUsers = maxUsersUpgraded
+	acc.UpdateSelf()
 	onSuccesfulUpgrade(w, acc)
 }
 
 func UpgradeCheckHandler(w http.ResponseWriter, r *http.Request) {
-	acc := findUserAccountFromActiveToken(r)
+	acc, found := findUserAccountFromActiveToken(r)
+	if !found {
+		w.WriteHeader(http.StatusNotFound)
+	}
 	onSuccesfulUpgrade(w, acc)
 }
 
 func onSuccesfulUpgrade(w http.ResponseWriter, acc AdminAccount) {
-	setAccountInfo(acc)
 	resJSON, err := json.Marshal(acc)
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		w.Write(resJSON)
 	}
-}
-
-var sessionTokens []string
-var mySigningKey = []byte("secret")
-
-type AdminAccount struct {
-	gorm.Model
-	Email         string
-	SessionToken  string
-	SessionExpiry time.Time
-	Password      string
-	IsUpgraded    bool
-	AccountId     string
-	Users         int
-	MaxUsers      int
-}
-
-var activeAccounts map[string]AdminAccount
-
-// map session -> email for lookup in activeAccounts map
-var sessionMap map[string]string
-
-type Credentials struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-var expected = Credentials{
-	Email:    defaultEmail,
-	Password: defaultHashedPass,
-}
-
-func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
-	var creds Credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		// If the structure of the body is wrong, return an HTTP error
-		fmt.Println("body decode err")
-		return creds, http.StatusBadRequest
-	}
-
-	if CheckPasswordHash(creds.Password, expected.Password) == false {
-		return creds, http.StatusUnauthorized
-	}
-
-	creds.Password, _ = HashPassword(creds.Password)
-
-	if expected.Email != creds.Email {
-		return creds, http.StatusUnauthorized
-	}
-	return creds, http.StatusOK
-}
-
-// StatusOK if already signed in, or after signin based on incoming cookie or email+password
-// otherwise frontend needs to prompt for usrname and pass and try again
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-
-	if isAuthenticated(r) {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-	creds, status := decodeAndCheckCreds(r)
-	if status != http.StatusOK {
-		w.WriteHeader(status)
-		return
-	}
-
-	account, found := activeAccounts[creds.Email]
-
-	expiry := time.Now().Add(120 * time.Second)
-	tokenString := getJWT(creds, expiry)
-	if found {
-		account.SessionToken = tokenString
-		account.SessionExpiry = expiry
-	} else {
-		account = AdminAccount{
-			Email:         creds.Email,
-			Password:      creds.Password,
-			IsUpgraded:    false,
-			SessionExpiry: expiry,
-			SessionToken:  tokenString,
-			AccountId:     defaultAccountID,
-			Users:         0,
-			MaxUsers:      maxUsers,
-		}
-	}
-
-	activeAccounts[account.Email] = account
-	sessionMap[tokenString] = creds.Email
-	sessionTokens = append(sessionTokens, tokenString)
-
-	http.SetCookie(w, &http.Cookie{
-		Name:    defaultCookieName,
-		Value:   account.SessionToken,
-		Expires: account.SessionExpiry,
-	})
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func getJWT(creds Credentials, expiry time.Time) string {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["Email"] = creds.Email
-	claims["Password"] = creds.Password
-	claims["exp"] = expiry
-	tokenString, _ := token.SignedString(mySigningKey)
-	return tokenString
-}
-
-func setAccountInfo(acc AdminAccount) {
-	activeAccounts[acc.Email] = acc
-}
-
-func findUserAccountFromActiveToken(r *http.Request) AdminAccount {
-	var acc AdminAccount
-	c, err := r.Cookie(defaultCookieName)
-	if err == nil {
-		email, found := sessionMap[c.Value]
-		if found != false {
-			acc = activeAccounts[email]
-			return acc
-		}
-	}
-
-	return acc
-}
-
-func isAuthenticated(r *http.Request) bool {
-	c, err := r.Cookie(defaultCookieName)
-	if err != nil {
-		if err == http.ErrNoCookie {
-			return false
-		}
-		return false
-	}
-	sessionToken := c.Value
-	found := index(sessionTokens, sessionToken)
-	if found != -1 {
-		return true
-	}
-	return false
-}
-
-func index(vs []string, t string) int {
-	for i, v := range vs {
-		if v == t {
-			return i
-		}
-	}
-	return -1
-}
-
-func deleteInSlice(a []string, i int) []string {
-	a = append(a[:i], a[i+1:]...)
-	return a
-}
-
-func cleanupExpiredTokens(creds Credentials) {
-	account, found := activeAccounts[creds.Email]
-
-	if found {
-		shouldClean := hasTokenExpired(account.SessionExpiry)
-		if shouldClean {
-			cleanToken(account)
-		}
-	}
-}
-func cleanToken(acc AdminAccount) {
-	token := acc.SessionToken
-	sessionTokenIndex := index(sessionTokens, token)
-	if sessionTokenIndex != -1 {
-		sessionTokens = deleteInSlice(sessionTokens, sessionTokenIndex)
-	}
-
-	acc.SessionToken = ""
-	acc.SessionExpiry = time.Now()
-	setAccountInfo(acc)
-
-	delete(sessionMap, token)
-}
-
-func hasTokenExpired(expiry time.Time) bool {
-	now := time.Now()
-	hasPassed := expiry.Before(now)
-	return hasPassed
-}
-
-func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -296,10 +103,14 @@ func applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	fmt.Println("App boot up...")
 	// Create global vars
-	activeAccounts = make(map[string]AdminAccount)
-	sessionMap = make(map[string]string)
-	db, _ = createDBConn()
-	// fmt.Println(createDBConn())
+	// activeAccounts = make(map[string]AdminAccount)
+	// sessionMap = make(map[string]string)
+	initAuth()
+	createDBConn()
+
+	// Queue up cleanup in main
+	// dbConn := GetDBConn()
+	// defer dbConn.Close()
 
 	WrappedLoginHandler := loggingMiddleware(cleanupExpiredTokensMiddleware(LoginHandler))
 	WrappedIOTDataHandler := loggingMiddleware(IOTDataHandler)

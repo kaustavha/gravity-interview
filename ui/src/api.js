@@ -78,7 +78,7 @@ const callAuthcheckApi = async () => _get('authcheck')
 const callUpgradeApi = async () => _get('upgrade', true)
 const callUpgradeCheckApi = async () => _get('upgradecheck', true)
 const callDashboardApi = async () => _get('dashboard', true)
-const callLogoutApi = async () => _get('logout', true)
+const callLogoutApi = async () => _get('logout')
 
 const callApi = async () => {
     const response = await fetch('/api');

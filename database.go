@@ -23,8 +23,7 @@ type DB struct {
 
 var db *DB
 
-func createDBConn() (*DB, error) {
-	db = &DB{db: nil}
+func createDBConn() {
 	conn, err := gorm.Open("postgres",
 		"host="+dbhost+" "+
 			"port="+dbport+" "+
@@ -34,7 +33,7 @@ func createDBConn() (*DB, error) {
 			"sslmode="+dbsslmode)
 	if err != nil {
 		fmt.Println(err, "db conn err")
-		return db, err
+		panic(err)
 	}
 
 	conn.AutoMigrate(&Metric{}, &AdminAccount{})
@@ -44,7 +43,6 @@ func createDBConn() (*DB, error) {
 	}
 
 	db = &DB{db: conn}
-	return db, err
 }
 func GetDB() *DB {
 	return db
@@ -57,14 +55,14 @@ func (db *DB) getConn() *gorm.DB {
 	return db.db
 }
 
-func (db *DB) countAllUniqueUsersInAccount(accountId string) int {
-	return db._countAllUniqueUsersInAccount(defaultTableName, accountId)
+func (db *DB) countAllUniqueUsersInAccount(accountID string) int {
+	return db._countAllUniqueUsersInAccount(defaultTableName, accountID)
 }
 
-func (db *DB) _countAllUniqueUsersInAccount(tableName string, accountId string) int {
+func (db *DB) _countAllUniqueUsersInAccount(tableName string, accountID string) int {
 	conn := db.getConn()
 	count := 0
-	conn.Table(tableName).Where("account_id = ?", accountId).Count(&count)
+	conn.Table(tableName).Where("account_id = ?", accountID).Count(&count)
 	return count
 }
 
@@ -77,8 +75,4 @@ func (db *DB) _countAllInTable(tableName string) int {
 	count := 0
 	conn.Table(tableName).Count(&count)
 	return count
-}
-
-func (db *DB) countAll() {
-
 }

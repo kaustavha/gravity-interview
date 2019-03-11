@@ -32,10 +32,6 @@ export default class Dashboard extends React.Component {
                             userCount: resJson.Users
                         })
                         this.updateDashboard();
-                    } else {
-                        this.setState({
-                            redirectToReferrer: true
-                        })
                     }
                 })
             } else {
@@ -90,10 +86,6 @@ export default class Dashboard extends React.Component {
                     if (!this.state.currentlyUpdatingDB) {
                         this.updateDashboard();
                     }
-                } else {
-                    this.setState({
-                        redirectToReferrer: true
-                    })
                 }
         })
     }

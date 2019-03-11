@@ -53,7 +53,7 @@ export default class LoginForm extends React.Component {
         return (
             <div>
                 <RouterHack redirectToReferrer={this.state.redirectToReferrer} loginSuccess={this.state.loginSuccess}/>
-                <form className="login-form" >
+                <form className="login-form" onSubmit={this.handleSubmit}>
                     <h1>Sign Into Your Account</h1>
             
                     <div>
