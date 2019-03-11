@@ -12,7 +12,7 @@ const (
 	dbport           = "5432"
 	dbuser           = "postgres"
 	dbname           = "iotdb"
-	dbpass           = "mysecretpassword"
+	dbpass           = "bXlzcWxwYXNzd29yZAo="
 	dbsslmode        = "disable"
 	defaultTableName = "metrics"
 )

@@ -16,7 +16,7 @@ const (
 	contentTypeJSON   = "application/json"
 
 	defaultCookieName = "session_token"
-	defaultSigningKey = "mysecretsigningkey"
+	defaultSigningKey = "bXlzZWNyZXRzaWduaW5na2V5Cg=="
 
 	pemPath = "./fixtures/server-cert.pem"
 	keyPath = "./fixtures/server-key.pem"

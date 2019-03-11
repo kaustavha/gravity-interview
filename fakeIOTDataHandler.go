@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultBearerToken = "shmoken"
+	defaultBearerToken = "YmVhcmVydG9rZW5wYXNzd29yZAo="
 	defaultAccountID   = "5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
 )
 

@@ -4,8 +4,9 @@
 
 
 1. postgres setup
+Note: The pass is base64 mysqlpassword
 ```
-docker run -d -p 5432:5432 --name my-postgres -e POSTGRES_PASSWORD=mysecretpassword postgres
+docker run -d -p 5432:5432 --name my-postgres2 -e POSTGRES_PASSWORD=bXlzcWxwYXNzd29yZAo= postgres
 
 psql -h localhost -p 5432 -U postgres -W
 CREATE DATABASE iotdb;
@@ -14,7 +15,7 @@ CREATE DATABASE iotdb;
 
 ```
 
-2. Go server
+1. Go server
 ```
 cd $GOPATH
 // git clone this repo into src or install it similiar to fakeiot against the github url via go get
@@ -41,11 +42,15 @@ cd $GOPATH
 go get github.com/gravitational/fakeiot
 go install github.com/gravitational/fakeiot
 
-$GOPATH/bin/fakeiot --token="shmoken" --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem test
+$GOPATH/bin/fakeiot --token="YmVhcmVydG9rZW5wYXNzd29yZAo=" --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem test
 
-$GOPATH/bin/fakeiot --token=shmoken --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem run --period=100s --freq=1s --users=100 --account-id="5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
+$GOPATH/bin/fakeiot --token="YmVhcmVydG9rZW5wYXNzd29yZAo=" --url="https://127.0.0.1:8443" --ca-cert=./fixtures/ca-cert.pem run --period=100s --freq=1s --users=100 --account-id="5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
 ```
-
+Note: To recreate the password
+```
+echo bearertokenpassword | base64  
+```  
+Likewise the `defaultSigningKey` is `echo mysecretsigningkey | base64`
 If the server is running you should see some output, also if youre logging into a DB you should see it update.  
 
 ---
