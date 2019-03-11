@@ -46,6 +46,12 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	acc.CleanToken()
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    defaultCookieName,
+		Value:   "",
+		Expires: time.Now(),
+	})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -86,7 +92,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				Users:         0,
 				MaxUsers:      maxUsers,
 			}
-			account.Users = acc.CountAssociatedUsers()
 		}
 	}
 
@@ -103,7 +108,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helpers
-
 func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
