@@ -3,11 +3,12 @@ import React from 'react';
 import {
     callAuthcheckApi,
     callDashboardApi,
-    RouterHack,
     callUpgradeApi,
     callUpgradeCheckApi,
-    callLogoutApi 
-} from "./api";
+    callLogoutApi
+} from "../util/api";
+
+import RouterHack from "./RouterHack"
 
 export default class Dashboard extends React.Component {
     constructor(props) {
@@ -21,7 +22,10 @@ export default class Dashboard extends React.Component {
             inProgress: false,
             currentlyUpdatingDB: false
         }
+    }
 
+    componentDidMount() {
+        // Reroute non-authorized users to login
         callAuthcheckApi().then(res => {
             if (res) {
                 callUpgradeCheckApi().then(resJson => {
@@ -40,53 +44,49 @@ export default class Dashboard extends React.Component {
         });
     }
 
-    updateDashboard() {
-        callDashboardApi().then(resJson => {
-            if (resJson) {
-                
-                if (resJson.userCount < this.state.userLimit) {
-                    this.setState({
-                        userCount: resJson.userCount,
-                        currentlyUpdatingDB: true
-                    });
-                    setTimeout(this.updateDashboard.bind(this), 1000);
-                } else {
-                    this.setState({
-                        userCount: resJson.userCount,
-                        currentlyUpdatingDB: false
-                    });
-                }
+    updateDashboard = async () => {
+        let resJson = await callDashboardApi()
+
+        if (resJson) {
+            if (resJson.userCount < this.state.userLimit) {
+                this.setState({
+                    userCount: resJson.userCount,
+                    currentlyUpdatingDB: true
+                });
+                setTimeout(this.updateDashboard.bind(this), 1000);
             } else {
                 this.setState({
-                    redirectToReferrer: true
-                })
-                console.log('update db fail')
+                    userCount: resJson.userCount,
+                    currentlyUpdatingDB: false
+                });
             }
-        })
-    }
-
-    handleLogout = async () => {
-        return callLogoutApi()
-        .then(res => {
+        } else {
             this.setState({
                 redirectToReferrer: true
             })
-        })
+            console.log('update db fail')
+        }
+    }
+
+    handleLogout = async () => {
+        await callLogoutApi();
+        this.setState({
+            redirectToReferrer: true
+        });
     }
 
     handleUpgrade = async () => {
-        return callUpgradeApi().then(resJson => {
-            if (resJson) {
-                    this.setState({
-                        isAccountUpgraded: resJson.IsUpgraded,
-                        userLimit: resJson.MaxUsers,
-                        userCount: resJson.Users
-                    })
-                    if (!this.state.currentlyUpdatingDB) {
-                        this.updateDashboard();
-                    }
-                }
-        })
+        let resJson = await callUpgradeApi()
+        if (resJson) {
+            this.setState({
+                isAccountUpgraded: resJson.IsUpgraded,
+                userLimit: resJson.MaxUsers,
+                userCount: resJson.Users
+            })
+            if (!this.state.currentlyUpdatingDB) {
+                this.updateDashboard(); // begin refreshing dashboard again
+            }
+        }
     }
 
     render() {
