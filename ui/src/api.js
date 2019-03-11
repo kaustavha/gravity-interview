@@ -21,7 +21,6 @@ class RouterHack extends React.Component {
             return true;
         }
         return false;
-            
     }
     render() {
         let { redirectToReferrer, loginSuccess } = this.state;
@@ -85,7 +84,6 @@ const callApi = async () => {
     if (response.status !== 200) throw Error(response);
     return response;
 };
-
 
 export {
     callDashboardApi,
