@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	// "github.com/jinzhu/gorm"
-	// _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 const (
@@ -45,15 +43,25 @@ func UpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	acc.IsUpgraded = true
 	acc.MaxUsers = maxUsersUpgraded
+	// updateSessionDetails(acc)
 	acc.UpdateSelf()
+	acc.SaveInDB()
 	onSuccesfulUpgrade(w, acc)
 }
 
 func UpgradeCheckHandler(w http.ResponseWriter, r *http.Request) {
 	acc, found := findUserAccountFromActiveToken(r)
+
+	// Get latest state of acc
 	if !found {
 		w.WriteHeader(http.StatusNotFound)
 	}
+	// force update from db
+	foundInDB, dbacc := db.findAdmin(acc.AccountId)
+	if foundInDB {
+		acc = *dbacc
+	}
+	// acc.UpdateSelf()
 	onSuccesfulUpgrade(w, acc)
 }
 
@@ -71,7 +79,6 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			next(w, r)
 			return
 		} else {
-			fmt.Println("Not authorized", r.Header)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -103,14 +110,8 @@ func applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
 func main() {
 	fmt.Println("App boot up...")
 	// Create global vars
-	// activeAccounts = make(map[string]AdminAccount)
-	// sessionMap = make(map[string]string)
-	initAuth()
+	InitAuth()
 	createDBConn()
-
-	// Queue up cleanup in main
-	// dbConn := GetDBConn()
-	// defer dbConn.Close()
 
 	WrappedLoginHandler := loggingMiddleware(cleanupExpiredTokensMiddleware(LoginHandler))
 	WrappedIOTDataHandler := loggingMiddleware(IOTDataHandler)

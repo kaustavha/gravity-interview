@@ -6,6 +6,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+func deleteAllInSlice(a []string, t string) []string {
+	i := index(a, t)
+	if i == -1 {
+		return a
+	}
+	a = deleteInSlice(a, i)
+	return deleteAllInSlice(a, t)
+}
+
 func index(vs []string, t string) int {
 	for i, v := range vs {
 		if v == t {

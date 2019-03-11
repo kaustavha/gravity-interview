@@ -45,7 +45,6 @@ export default class Dashboard extends React.Component {
             if (resJson) {
                 
                 if (resJson.userCount < this.state.userLimit) {
-
                     this.setState({
                         userCount: resJson.userCount,
                         currentlyUpdatingDB: true

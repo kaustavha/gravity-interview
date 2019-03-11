@@ -9,8 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-var sessionTokens = []string{}
-
 type AdminAccount struct {
 	gorm.Model
 	Email           string
@@ -24,14 +22,37 @@ type AdminAccount struct {
 	AssociatedUsers []Metric
 }
 
+type Credentials struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+var expected Credentials
+var mySigningKey []byte
+
+var activeAccounts map[string]AdminAccount
+
+// map session -> email for lookup in activeAccounts map
+var sessionMap map[string]string
+var sessionTokens []string
+
 func (a *AdminAccount) SaveInDB() {
 	metricDB := GetDB()
 	dbconn := metricDB.getConn()
-	if dbconn.NewRecord(a) {
+	found, accOrig := metricDB.findAdmin(a.AccountId)
+
+	fmt.Println("SAVE", found, accOrig.Users, a.Users)
+
+	if dbconn.NewRecord(a) && found != true {
 		dbconn.Create(&a)
 	} else {
-		dbconn.Update(&a)
+		metricDB.updateById(*a)
+		// dbconn.Update(&a)
 	}
+
+	found, accOrig = metricDB.findAdmin(a.AccountId)
+
+	fmt.Println("SAVE", found, accOrig.Users)
 }
 
 func (a *AdminAccount) CountAssociatedUsers() int {
@@ -46,87 +67,16 @@ func (a *AdminAccount) hasTokenExpired() bool {
 	return hasPassed
 }
 
-// func (a *AdminAccount) findSelf() *AdminAccount {
-// 	metricDB := GetDB()
-// 	dbconn := metricDB.getConn()
-// 	dbconn.First(&a) // only 1 hardcoded admin user for now
-
-// }
-
 func (a *AdminAccount) CleanToken() {
-
 	clearSessionDetails(*a)
-	token := a.SessionToken
-	sessionTokenIndex := index(sessionTokens, token)
-	if sessionTokenIndex == -1 {
-		return
-	}
-
-	sessionTokens = deleteInSlice(sessionTokens, sessionTokenIndex)
-
-	sessionMap[a.SessionToken] = a.Email
-	a.SessionToken = ""
-	a.SessionExpiry = time.Now()
-
-	fmt.Println(sessionTokens, sessionMap, activeAccounts)
-	fmt.Println("cleant oken", a.SessionToken)
-	// a.UpdateSelf()
-
-	// delete(sessionMap, token)
 }
 
 func (a *AdminAccount) UpdateSelf() {
 	updateSessionDetails(*a)
-	// updateSessionDetails(*a)
-	// fmt.Println("UpdateSelf", activeAccounts[a.Email].SessionToken)
-	// activeAccounts[a.Email] = *a
-	// fmt.Println("UpdateSelf", activeAccounts[a.Email].SessionToken)
-	// if a.SessionToken != "" {
-	// 	fmt.Println("hmm", a.SessionToken)
-	// 	sessionMap[a.SessionToken] = a.Email
-	// 	sessionTokens = append(sessionTokens, a.SessionToken)
-	// }
 }
 
-func clearSessionDetails(a AdminAccount) {
-	fmt.Println("s u", sessionTokens, sessionMap, activeAccounts)
-	token := a.SessionToken
-	sessionTokenIndex := index(sessionTokens, token)
-	if sessionTokenIndex == -1 {
-		return
-	}
-
-	sessionTokens = deleteInSlice(sessionTokens, sessionTokenIndex)
-
-	delete(sessionMap, token)
-
-	activeAccounts[a.Email] = a
-	fmt.Println(sessionTokens, sessionMap, activeAccounts)
-}
-
-func updateSessionDetails(a AdminAccount) {
-	activeAccounts[a.Email] = a
-	if a.SessionToken != "" {
-		sessionMap[a.SessionToken] = a.Email
-		sessionTokens = append(sessionTokens, a.SessionToken)
-	}
-}
-
-type Credentials struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-var expected Credentials
-var activeAccounts map[string]AdminAccount
-
-var mySigningKey []byte
-
-// map session -> email for lookup in activeAccounts map
-var sessionMap map[string]string
-
-func initAuth() {
-	// sessionTokens = []string{}
+func InitAuth() {
+	sessionTokens = []string{}
 	activeAccounts = make(map[string]AdminAccount)
 	sessionMap = make(map[string]string)
 	mySigningKey = []byte(defaultHashedPass)
@@ -135,46 +85,6 @@ func initAuth() {
 		Email:    defaultEmail,
 		Password: defaultHashedPass,
 	}
-
-}
-
-func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
-	var creds Credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		// If the structure of the body is wrong, return an HTTP error
-		fmt.Println("body decode err")
-		return creds, http.StatusBadRequest
-	}
-
-	if CheckPasswordHash(creds.Password, expected.Password) == false {
-		return creds, http.StatusUnauthorized
-	}
-
-	creds.Password, _ = HashPassword(creds.Password)
-
-	if expected.Email != creds.Email {
-		return creds, http.StatusUnauthorized
-	}
-	return creds, http.StatusOK
-}
-
-func isAuthenticated(r *http.Request) bool {
-	c, err := r.Cookie(defaultCookieName)
-	if err != nil {
-		if err == http.ErrNoCookie {
-			return false
-		}
-		return false
-	}
-	sessionToken := c.Value
-	found := index(sessionTokens, sessionToken)
-	if found != -1 {
-		fmt.Println("found cookie")
-		fmt.Println(sessionTokens, sessionToken)
-		return true
-	}
-	return false
 }
 
 func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -212,22 +122,27 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		account.SessionToken = tokenString
 		account.SessionExpiry = expiry
 	} else {
-		account = AdminAccount{
-			Email:         creds.Email,
-			Password:      creds.Password,
-			IsUpgraded:    false,
-			SessionExpiry: expiry,
-			SessionToken:  tokenString,
-			AccountId:     defaultAccountID,
-			Users:         0,
-			MaxUsers:      maxUsers,
+		found, acc := db.findAdmin(defaultAccountID)
+		if found {
+			account = *acc
+			account.SessionToken = tokenString
+			account.SessionExpiry = expiry
+		} else {
+			account = AdminAccount{
+				Email:         creds.Email,
+				Password:      creds.Password,
+				IsUpgraded:    false,
+				SessionExpiry: expiry,
+				SessionToken:  tokenString,
+				AccountId:     defaultAccountID,
+				Users:         0,
+				MaxUsers:      maxUsers,
+			}
 		}
 	}
 
 	account.UpdateSelf()
-	// activeAccounts[account.Email] = account
-	// sessionMap[tokenString] = creds.Email
-	// sessionTokens = append(sessionTokens, tokenString)
+	account.SaveInDB()
 
 	http.SetCookie(w, &http.Cookie{
 		Name:    defaultCookieName,
@@ -236,6 +151,65 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// Helpers
+
+func clearSessionDetails(a AdminAccount) {
+	token := a.SessionToken
+	sessionTokens = deleteAllInSlice(sessionTokens, token)
+	delete(sessionMap, token)
+
+	a.SessionToken = ""
+	a.SessionExpiry = time.Now()
+	activeAccounts[a.Email] = a
+}
+
+func updateSessionDetails(a AdminAccount) {
+	activeAccounts[a.Email] = a
+	if a.SessionToken != "" {
+		sessionMap[a.SessionToken] = a.Email
+		sessionTokens = append(sessionTokens, a.SessionToken)
+	}
+}
+
+func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
+	var creds Credentials
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		// If the structure of the body is wrong, return an HTTP error
+		fmt.Println("body decode err")
+		return creds, http.StatusBadRequest
+	}
+
+	if CheckPasswordHash(creds.Password, expected.Password) == false {
+		return creds, http.StatusUnauthorized
+	}
+
+	creds.Password, _ = HashPassword(creds.Password)
+
+	if expected.Email != creds.Email {
+		return creds, http.StatusUnauthorized
+	}
+	return creds, http.StatusOK
+}
+
+func isAuthenticated(r *http.Request) bool {
+	c, err := r.Cookie(defaultCookieName)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return false
+		}
+		return false
+	}
+	sessionToken := c.Value
+	found := index(sessionTokens, sessionToken)
+	if found != -1 {
+		fmt.Println("found cookie")
+		// fmt.Println(sessionTokens, sessionToken)
+		return true
+	}
+	return false
 }
 
 func findUserAccountFromActiveToken(r *http.Request) (AdminAccount, bool) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -17,11 +16,9 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if acc.Users != acc.CountAssociatedUsers() {
-		fmt.Println(acc.Users)
 		acc.Users = acc.CountAssociatedUsers()
 		acc.UpdateSelf()
-
-		fmt.Println(acc.Users)
+		acc.SaveInDB()
 	}
 
 	dasboardInfo := DashboardInfo{

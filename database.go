@@ -32,18 +32,20 @@ func createDBConn() {
 			"password="+dbpass+" "+
 			"sslmode="+dbsslmode)
 	if err != nil {
-		fmt.Println(err, "db conn err")
 		panic(err)
 	}
 
-	conn.AutoMigrate(&Metric{}, &AdminAccount{})
 	if !conn.HasTable(defaultTableName) {
 		fmt.Println(conn.HasTable(defaultTableName))
 		fmt.Println("Migration fail")
 	}
 
 	db = &DB{db: conn}
+
+	// db.resetDB()
+	conn.AutoMigrate(&Metric{}, &AdminAccount{})
 }
+
 func GetDB() *DB {
 	return db
 }
@@ -53,6 +55,26 @@ func GetDBConn() *gorm.DB {
 
 func (db *DB) getConn() *gorm.DB {
 	return db.db
+}
+
+func (db *DB) resetDB() {
+	conn := db.getConn()
+	conn.DropTableIfExists(&Metric{}, &AdminAccount{})
+}
+
+func (db *DB) updateById(a AdminAccount) {
+	conn := db.getConn()
+	conn.Table("admin_accounts").Where("account_id = ?", a.AccountId).Updates(a)
+}
+
+func (db *DB) findAdmin(accountId string) (bool, *AdminAccount) {
+	adminFound := &AdminAccount{}
+	conn := db.getConn()
+	conn.Table("admin_accounts").Where("account_id = ?", accountId).Find(&adminFound)
+	if adminFound.AccountId == accountId {
+		return true, adminFound
+	}
+	return false, nil
 }
 
 func (db *DB) countAllUniqueUsersInAccount(accountID string) int {
