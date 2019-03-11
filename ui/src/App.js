@@ -4,8 +4,8 @@ import {
   Route
 } from "react-router-dom";
 
-import LoginForm from './Components/LoginForm';
-import Dashboard from './Components/Dashboard';
+import LoginForm from './components/LoginForm';
+import Dashboard from './components/Dashboard';
 import './App.css';
 
 class App extends Component {
