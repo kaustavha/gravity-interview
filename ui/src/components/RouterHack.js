@@ -26,13 +26,10 @@ export default class RouterHack extends React.Component {
         let { redirectToReferrer, loginSuccess } = this.state;
 
         if (redirectToReferrer) {
-            this.setState({redirectToReferrer: false});
-            return <Redirect to='/login' />;
-        } else if (loginSuccess) {
-            this.setState({loginSuccess: false});
+            return <Redirect to='/login'/>;
+        }
+        if (loginSuccess) {
             return <Redirect to='/dashboard' push />;
-        } else {
-            return <div></div>
         }
     }
 }

@@ -3,7 +3,7 @@ import {
     callAuthcheckApi,
     callLoginApi
 } from "../util/api";
-import RouterHack from "./RouterHack"
+import RouterHack from "./RouterHack";
 
 export default class LoginForm extends React.Component {
     constructor(props) {
@@ -20,7 +20,7 @@ export default class LoginForm extends React.Component {
 
     componentDidMount() {
         // Re route already logged in users to dashboard
-        callAuthcheckApi().then(res => {
+        return callAuthcheckApi().then(res => {
             if (res) {
                 this.setState({loginSuccess: true});
             }
@@ -41,21 +41,21 @@ export default class LoginForm extends React.Component {
         return (email.length > 0 && pass.length > 0);
     }
 
-    handleSubmit = async () => {
+    handleSubmit() {
         if (this._isInputValid()) {
-            const res = await callLoginApi(this.state.email, this.state.password);
-            if (res) {
-                this.setState({loginSuccess: true});
-            } else {
-                this.setState({redirectToReferrer: true});
-            }
+            return callLoginApi(this.state.email, this.state.password).then(res => {
+                if (res) {
+                    this.setState({loginSuccess: true});
+                } else {
+                    this.setState({redirectToReferrer: true});
+                }
+            });
         }
     }
-
     render() {
         return (
             <div>
-                <RouterHack redirectToReferrer={this.state.redirectToReferrer} loginSuccess={this.state.loginSuccess}/>
+                <RouterHack redirectToReferrer={this.state.redirectToReferrer} loginSuccess={this.state.loginSuccess} />
                 <form className="login-form" onSubmit={this.handleSubmit}>
                     <h1>Sign Into Your Account</h1>
             

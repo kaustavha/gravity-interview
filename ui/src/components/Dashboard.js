@@ -26,7 +26,7 @@ export default class Dashboard extends React.Component {
 
     componentDidMount() {
         // Reroute non-authorized users to login
-        callAuthcheckApi().then(res => {
+        return callAuthcheckApi().then(res => {
             if (res) {
                 callUpgradeCheckApi().then(resJson => {
                     if (resJson) {
@@ -34,7 +34,7 @@ export default class Dashboard extends React.Component {
                             isAccountUpgraded: resJson.IsUpgraded,
                             userLimit: resJson.MaxUsers,
                             userCount: resJson.Users
-                        })
+                        });
                         this.updateDashboard();
                     }
                 })
@@ -44,49 +44,51 @@ export default class Dashboard extends React.Component {
         });
     }
 
-    updateDashboard = async () => {
-        let resJson = await callDashboardApi()
-
-        if (resJson) {
-            if (resJson.userCount < this.state.userLimit) {
-                this.setState({
-                    userCount: resJson.userCount,
-                    currentlyUpdatingDB: true
-                });
-                setTimeout(this.updateDashboard.bind(this), 1000);
+    updateDashboard() {
+        return callDashboardApi().then(resJson => {
+            if (resJson) {
+                if (resJson.userCount < this.state.userLimit) {
+                    this.setState({
+                        userCount: resJson.userCount,
+                        currentlyUpdatingDB: true
+                    });
+                    setTimeout(this.updateDashboard.bind(this), 1000);
+                } else {
+                    this.setState({
+                        userCount: resJson.userCount,
+                        currentlyUpdatingDB: false
+                    });
+                }
             } else {
                 this.setState({
-                    userCount: resJson.userCount,
-                    currentlyUpdatingDB: false
-                });
+                    redirectToReferrer: true
+                })
+                console.log('update db fail')
             }
-        } else {
-            this.setState({
-                redirectToReferrer: true
-            })
-            console.log('update db fail')
-        }
-    }
-
-    handleLogout = async () => {
-        await callLogoutApi();
-        this.setState({
-            redirectToReferrer: true
         });
     }
 
-    handleUpgrade = async () => {
-        let resJson = await callUpgradeApi()
-        if (resJson) {
+    handleLogout() {
+        return callLogoutApi().then(() => {
             this.setState({
-                isAccountUpgraded: resJson.IsUpgraded,
-                userLimit: resJson.MaxUsers,
-                userCount: resJson.Users
-            })
-            if (!this.state.currentlyUpdatingDB) {
-                this.updateDashboard(); // begin refreshing dashboard again
+                redirectToReferrer: true
+            });
+        });
+    }
+
+    handleUpgrade() {
+        return callUpgradeApi().then(resJson => {
+            if (resJson) {
+                this.setState({
+                    isAccountUpgraded: resJson.IsUpgraded,
+                    userLimit: resJson.MaxUsers,
+                    userCount: resJson.Users
+                })
+                if (!this.state.currentlyUpdatingDB) {
+                    this.updateDashboard(); // begin refreshing dashboard again
+                }
             }
-        }
+        });
     }
 
     render() {
