@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/kaustavha/gravity-interview/src/authenticator"
 )
 
 const (
@@ -27,6 +29,8 @@ const (
 
 func main() {
 	fmt.Println("App boot up...")
+	a, _ := authenticator.NewAuthenticator()
+	fmt.Println(a)
 	// Create global vars
 	InitAuth()
 	CreateDBConn()

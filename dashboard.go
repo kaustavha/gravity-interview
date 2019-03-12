@@ -10,6 +10,9 @@ type DashboardInfo struct {
 }
 
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
+
+	// check if active user in authenticator
+	// then return their details
 	acc, found := findUserAccountFromActiveToken(r)
 
 	if !found {

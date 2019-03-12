@@ -59,6 +59,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 // otherwise frontend needs to prompt for usrname and pass and try again
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if isAuthenticated(r) {
+
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -108,6 +109,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helpers
+// ported
 func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
@@ -128,6 +130,7 @@ func decodeAndCheckCreds(r *http.Request) (Credentials, int) {
 	return creds, http.StatusOK
 }
 
+// ported to authenticaot
 func isAuthenticated(r *http.Request) bool {
 	c, err := r.Cookie(defaultCookieName)
 	if err != nil {
@@ -144,6 +147,7 @@ func isAuthenticated(r *http.Request) bool {
 	return false
 }
 
+// ported
 func findUserAccountFromActiveToken(r *http.Request) (AdminAccount, bool) {
 	var acc AdminAccount
 	c, err := r.Cookie(defaultCookieName)
@@ -158,6 +162,7 @@ func findUserAccountFromActiveToken(r *http.Request) (AdminAccount, bool) {
 	return acc, false
 }
 
+// ported
 func cleanupExpiredTokens(creds Credentials) {
 	account, found := activeAccounts[creds.Email]
 

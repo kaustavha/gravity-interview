@@ -35,17 +35,15 @@ func CreateDBConn() {
 		panic(err)
 	}
 
+	conn.AutoMigrate(&Metric{}, &AdminAccount{})
 	if !conn.HasTable(defaultTableName) {
 		fmt.Println(conn.HasTable(defaultTableName))
 		fmt.Println("Migration fail")
 	}
 
 	db = &DB{db: conn}
-
-	// db.resetDB()
-	conn.AutoMigrate(&Metric{}, &AdminAccount{})
 }
-
+s
 func GetDB() *DB {
 	return db
 }

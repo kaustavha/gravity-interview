@@ -43,6 +43,11 @@ func loginHandler(authenticator *authenticator.Authenticator, w http.ResponseWri
 	}
 	sessionToken := c.Value
 
+	if authenticator.IsAuthenticated(sessionToken) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	var creds Credentials
 
 	err = json.NewDecoder(r.Body).Decode(&creds)

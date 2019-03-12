@@ -49,7 +49,6 @@ func NewAuthenticator(a string, e string, p string, m int, s []byte, db *gorm.DB
 
 // Gets the admin user, and updates tokens
 func (a *Authenticator) Login(sessionToken string, password string) *AdminAccount {
-
 	acc, found := a.FindUserAccountFromActiveToken(sessionToken)
 
 	var err error
@@ -104,8 +103,8 @@ func (a *Authenticator) UpdateSessionDetails(admin *AdminAccount) {
 	}
 }
 
-func (a *Authenticator) IsAuthenticated(sessionToken *string) bool {
-	found := index(a.Tokens, *sessionToken)
+func (a *Authenticator) IsAuthenticated(sessionToken string) bool {
+	found := index(a.Tokens, sessionToken)
 	if found != -1 {
 		return true
 	}

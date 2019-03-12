@@ -40,3 +40,17 @@ func (a *AdminAccount) UpdateToken(password string, mySigningKey []byte) {
 	a.SessionExpiry = expiry
 	a.SessionToken = tokenString
 }
+
+// isAccountUpgraded: resJson.IsUpgraded,
+// userLimit: resJson.MaxUsers,
+// userCount: resJson.Users
+
+func (a *AdminAccount) Upgrade() {
+}
+
+func (a *AdminAccount) GetInfo() {
+
+}
+func (a *AdminAccount) IncrementUserCount() {
+
+}

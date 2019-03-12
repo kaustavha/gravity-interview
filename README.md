@@ -4,6 +4,7 @@
 
 
 1. postgres setup
+https://docs.docker.com/samples/library/postgres/
 Note: The pass is base64 mysqlpassword
 ```
 docker run -d -p 5432:5432 --name my-postgres2 -e POSTGRES_PASSWORD=bXlzcWxwYXNzd29yZAo= postgres
