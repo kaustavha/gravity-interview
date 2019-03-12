@@ -1,9 +1,9 @@
 import React from 'react';
 import {
     callAuthcheckApi,
-    callLoginApi
-} from "../util/api";
-import RouterHack from "./RouterHack"
+    callLoginApi,
+    RouterHack
+} from "./api";
 
 export default class LoginForm extends React.Component {
     constructor(props) {
@@ -16,10 +16,7 @@ export default class LoginForm extends React.Component {
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
-    }
 
-    componentDidMount() {
-        // Re route already logged in users to dashboard
         callAuthcheckApi().then(res => {
             if (res) {
                 this.setState({loginSuccess: true});

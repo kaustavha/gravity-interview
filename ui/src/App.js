@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
 import {
   BrowserRouter,
-  Route
+  Route,
 } from "react-router-dom";
 
-import LoginForm from './components/LoginForm';
-import Dashboard from './components/Dashboard';
+import LoginForm from './LoginForm';
+import Dashboard from './Dashboard';
 import './App.css';
 
 class App extends Component {
