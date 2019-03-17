@@ -18,7 +18,7 @@ func (db *DB) Setup() error {
 	conn.AutoMigrate(&AdminAccount{})
 
 	if !conn.HasTable(db.tableName) {
-		return trace.NotFound("Table not found in DB, Migration fail")
+		return trace.NotFound("table not found in DB, Migration fail")
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func (db *DB) FindAdmin(AccountID string) (*AdminAccount, error) {
 	conn := db.dbconn
 	record := conn.Table(db.tableName).Where("account_id = ?", AccountID).Find(&adminFound)
 	if record.RecordNotFound() {
-		return nil, trace.NotFound("RecordNotFound")
+		return nil, trace.NotFound("admin not found in db")
 	}
 
 	// All unahndled errors e.g. db conn errs
@@ -72,7 +72,7 @@ func (db *DB) FindAdmin(AccountID string) (*AdminAccount, error) {
 		return nil, trace.Wrap(record.Error)
 	}
 	if adminFound.AccountID != AccountID {
-		return nil, trace.NotFound("Acc id doenst match")
+		return nil, trace.NotFound("acc id doenst match")
 	}
 	return adminFound, nil
 }

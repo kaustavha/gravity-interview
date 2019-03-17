@@ -17,16 +17,16 @@ func (a *Authenticator) isAuthenticated(sessionToken string) bool {
 // Given a un-encoded email and pass from the frontend - checks if its our defaults and returns the coded pass
 func (a *Authenticator) decodeAndCheckCreds(password string, email string) (string, error) {
 	if CheckPasswordHash(password, a.Expected.Password) == false {
-		return "", trace.AccessDenied("Password doesnt match known admin creds")
+		return "", trace.AccessDenied("password doesnt match known admin creds")
 	}
 
 	if a.Expected.Email != email {
-		return "", trace.AccessDenied("Email doesnt match known admin creds")
+		return "", trace.AccessDenied("email doesnt match known admin creds")
 	}
 
 	codedPass, err := HashPassword(password)
 	if err != nil {
-		return "", trace.AccessDenied("Coudnt hash pass")
+		return "", trace.AccessDenied("coudnt hash pass")
 	}
 
 	return codedPass, nil
@@ -57,7 +57,7 @@ func (a *Authenticator) findUserAccountFromActiveToken(token string) (*AdminAcco
 	if found != false {
 		return acc, nil
 	}
-	return acc, trace.NotFound("RecordNotFound")
+	return acc, trace.NotFound("recordNotFound")
 }
 
 func (a *Authenticator) getAcc() *AdminAccount {
@@ -73,7 +73,7 @@ func (a *Authenticator) getAcc() *AdminAccount {
 func (a *Authenticator) getSessionToken(r *http.Request) (string, error) {
 	c, err := r.Cookie(a.Expected.DefaultCookieName)
 	if err != nil {
-		return "", trace.NotFound("Cookie not found")
+		return "", trace.NotFound("cookie not found")
 	}
 	sessionToken := c.Value
 	return sessionToken, nil

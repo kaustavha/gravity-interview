@@ -54,7 +54,7 @@ func (a *Authenticator) LogoutAdmin(r *http.Request) (string, time.Time, error) 
 	sessionToken, err := a.getSessionToken(r)
 	defaultTime := time.Now()
 	if err != nil {
-		return "", defaultTime, trace.NotFound("Could not find session token in req: %v", err)
+		return "", defaultTime, trace.NotFound("could not find session token in req: %v", err)
 	}
 	acc, err := a.findUserAccountFromActiveToken(sessionToken)
 	if err != nil {
