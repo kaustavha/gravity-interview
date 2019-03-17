@@ -16,7 +16,7 @@ export default class LoginForm extends React.Component {
         }
         this.handleChange = this.handleChange.bind(this)
         this.handleSubmit = this.handleSubmit.bind(this)
-        this._isInputValid = this._isInputValid.bind(this)
+        // this._isInputValid = this._isInputValid.bind(this)
     }
 
     componentDidMount() {
@@ -47,8 +47,6 @@ export default class LoginForm extends React.Component {
             return callLoginApi(this.state.email, this.state.password).then(res => {
                 if (res) {
                     this.setState({loginSuccess: true})
-                } else {
-                    this.setState({redirectToReferrer: true})
                 }
             })
         }

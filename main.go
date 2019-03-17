@@ -9,7 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/kaustavha/gravity-interview/src/authenticator"
-	"github.com/kaustavha/gravity-interview/src/iotDataHandler"
+	"github.com/kaustavha/gravity-interview/src/iotdatahandler"
 )
 
 const (
@@ -99,7 +99,7 @@ func main() {
 	m := GetNewMiddlewareManager(a)
 
 	// init iotdata handler
-	i := iotDataHandler.GetNewIOTDataHandler(
+	i := iotdatahandler.GetNewIOTDataHandler(
 		a,
 		contentTypeHeader,
 		contentTypeJSON,

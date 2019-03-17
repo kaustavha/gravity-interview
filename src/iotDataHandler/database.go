@@ -1,15 +1,17 @@
-package iotDataHandler
+package iotdatahandler
 
 import (
 	"github.com/gravitational/trace"
 	"github.com/jinzhu/gorm"
 )
 
+//IotDataHandlerDB is the main struct
 type IotDataHandlerDB struct {
 	dbconn    *gorm.DB
 	tableName string
 }
 
+//GetNewIotDataHandlerDB returns a new IotDataHandlerDB
 func GetNewIotDataHandlerDB(db *gorm.DB) *IotDataHandlerDB {
 	db.AutoMigrate(&Metric{})
 	return &IotDataHandlerDB{
@@ -18,6 +20,7 @@ func GetNewIotDataHandlerDB(db *gorm.DB) *IotDataHandlerDB {
 	}
 }
 
+//SaveInDB saves a metric in the users db and updates the user count in the assoc admin
 func (db *IotDataHandlerDB) SaveInDB(m *Metric) error {
 	_, err := db.findMetric(m)
 

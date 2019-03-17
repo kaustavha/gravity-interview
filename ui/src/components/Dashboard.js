@@ -26,6 +26,7 @@ export default class Dashboard extends React.Component {
         this.updateDashboard = this.updateDashboard.bind(this)
         this.handleLogout = this.handleLogout.bind(this)
         this.handleUpgrade = this.handleUpgrade.bind(this)
+        this.timer = null;
     }
 
     componentDidMount() {
@@ -48,6 +49,10 @@ export default class Dashboard extends React.Component {
         });
     }
 
+    componentWillUnmount() {
+        clearTimeout(this.timer)
+    }
+
     updateDashboard() {
         return callDashboardApi().then(resJson => {
             if (resJson) {
@@ -56,7 +61,7 @@ export default class Dashboard extends React.Component {
                         userCount: resJson.Users,
                         currentlyUpdatingDB: true
                     });
-                    setTimeout(this.updateDashboard.bind(this), 1000)
+                    this.timer = setTimeout(this.updateDashboard.bind(this), 1000)
                 } else {
                     this.setState({
                         userCount: resJson.Users,
@@ -64,9 +69,10 @@ export default class Dashboard extends React.Component {
                     });
                 }
             } else {
-                this.setState({
-                    redirectToReferrer: true
-                })
+                clearTimeout(this.timer)
+                // this.setState({
+                //     redirectToReferrer: true
+                // })
                 console.log('update db fail')
             }
         });

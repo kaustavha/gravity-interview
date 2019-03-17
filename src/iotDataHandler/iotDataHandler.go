@@ -1,4 +1,4 @@
-package iotDataHandler
+package iotdatahandler
 
 import (
 	"encoding/json"

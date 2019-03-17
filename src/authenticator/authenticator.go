@@ -82,6 +82,7 @@ type credentials struct {
 //LoginHandler logs an admin user in and sets them in the session
 func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if a.IsAuthenticated(r) {
+		fmt.Println("Already authed")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -93,19 +94,19 @@ func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	acc, err := a.login(creds.Email, creds.Password)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:    a.Expected.DefaultCookieName,
 		Value:   acc.SessionToken,
 		Expires: acc.SessionExpiry,
 	})
-
-	if err != nil {
-		fmt.Println(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -132,6 +133,10 @@ func (a *Authenticator) logout(sessionToken string) (*AdminAccount, error) {
 		return nil, trace.Wrap(err)
 	}
 	err = a.clearSessionDetails(acc)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	err = a.Database.SaveInDB(acc)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -267,7 +272,7 @@ func (a *Authenticator) IncrementUserCount(accountID string) error {
 	}
 
 	acc.IncrementUserCount()
-	a.Database.SaveInDB(acc)
+	// a.Database.SaveInDB(acc)
 	a.updateSessionDetails(acc)
 	return nil
 }
@@ -276,6 +281,7 @@ func (a *Authenticator) getAcc() *AdminAccount {
 	acc, err := a.Database.FindAdmin(a.Expected.AccountID)
 	if err != nil {
 		acc = GetDefaultAdminAccount(a.Expected)
+		a.Database.SaveInDB(acc)
 	}
 
 	return acc
