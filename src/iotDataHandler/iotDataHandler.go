@@ -11,11 +11,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const (
-	defaultBearerToken = "YmVhcmVydG9rZW5wYXNzd29yZAo="
-	defaultAccountID   = "5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
-)
-
 type Authenticator interface {
 	IncrementUserCount(AccountID string) error
 }
@@ -40,16 +35,20 @@ type Metric struct {
 }
 
 type Defaults struct {
-	contentTypeHeader string
-	contentTypeJSON   string
+	contentTypeHeader  string
+	contentTypeJSON    string
+	defaultAccountID   string
+	defaultBearerToken string
 }
 
-func GetNewIOTDataHandler(a interface{}, contentTypeHeader string, contentTypeJSON string, db *gorm.DB) *IOTDataHandler {
+func GetNewIOTDataHandler(a interface{}, contentTypeHeader string, contentTypeJSON string, defaultAccountID string, defaultBearerToken string, db *gorm.DB) *IOTDataHandler {
 	return &IOTDataHandler{
 		a: reflect.ValueOf(a).Interface().(Authenticator),
 		Defaults: &Defaults{
-			contentTypeHeader: contentTypeHeader,
-			contentTypeJSON:   contentTypeJSON,
+			contentTypeHeader:  contentTypeHeader,
+			contentTypeJSON:    contentTypeJSON,
+			defaultAccountID:   defaultAccountID,
+			defaultBearerToken: defaultBearerToken,
 		},
 		db: GetNewIotDataHandlerDB(db),
 	}
@@ -97,7 +96,7 @@ func (i *IOTDataHandler) IOTDataHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	reqToken = splitToken[1]
-	if reqToken != defaultBearerToken {
+	if reqToken != i.Defaults.defaultBearerToken {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

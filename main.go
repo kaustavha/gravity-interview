@@ -18,6 +18,8 @@ const (
 	contentTypeHeader = "Content-Type"
 	contentTypeJSON   = "application/json"
 
+	defaultBearerToken = "YmVhcmVydG9rZW5wYXNzd29yZAo="
+
 	defaultCookieName = "session_token"
 
 	pemPath = "./fixtures/server-cert.pem"
@@ -101,6 +103,8 @@ func main() {
 		a,
 		contentTypeHeader,
 		contentTypeJSON,
+		accountID,
+		defaultBearerToken,
 		db,
 	)
 
