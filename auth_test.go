@@ -12,11 +12,11 @@ func TestAuthMiddleware_withAuthcheckHandler_Success(t *testing.T) {
 	// setup
 	db, err := createDBConn()
 	a, err := authenticator.NewAuthenticator(
-		AccountID,
-		Email,
-		HashedPass,
+		accountID,
+		email,
+		hashedPass,
 		maxUsers,
-		[]byte(SigningKey),
+		[]byte(signingKey),
 		maxUsersUpgraded,
 		defaultCookieName,
 		db,

@@ -23,26 +23,24 @@ const (
 	pemPath = "./fixtures/server-cert.pem"
 	keyPath = "./fixtures/server-key.pem"
 
-	AccountID        = "5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
-	Email            = "a@a.com"
-	HashedPass       = "$2a$14$JMgUM09OV3HPAMKNM9nnb.wghzq5ayYRe91li1j9uqc9pGxU0kQX2"
+	accountID        = "5a28fa21-c70d-4bf3-b4c4-c4b109d5d269"
+	email            = "a@a.com"
+	hashedPass       = "$2a$14$JMgUM09OV3HPAMKNM9nnb.wghzq5ayYRe91li1j9uqc9pGxU0kQX2"
 	maxUsers         = 100
 	maxUsersUpgraded = 1000
-	SigningKey       = "bXlzZWNyZXRzaWduaW5na2V5Cg=="
-	TableName        = "metrics"
+	signingKey       = "bXlzZWNyZXRzaWduaW5na2V5Cg=="
 
 	debugDefault = true
 )
 
 func createDBConn() (*gorm.DB, error) {
 	const (
-		dbhost           = "localhost"
-		dbport           = "5432"
-		dbuser           = "postgres"
-		dbname           = "iotdb"
-		dbpass           = "bXlzcWxwYXNzd29yZAo="
-		dbsslmode        = "disable"
-		defaultTableName = "metrics"
+		dbhost    = "localhost"
+		dbport    = "5432"
+		dbuser    = "postgres"
+		dbname    = "iotdb"
+		dbpass    = "bXlzcWxwYXNzd29yZAo="
+		dbsslmode = "disable"
 	)
 
 	optString := "host=" + dbhost + " " +
@@ -59,6 +57,7 @@ func createDBConn() (*gorm.DB, error) {
 	return conn, nil
 }
 
+//AuthcheckHandler basic handler, returns ok always, auth check is done by middleware
 func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
@@ -80,11 +79,11 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	a, err := authenticator.NewAuthenticator(
-		AccountID,
-		Email,
-		HashedPass,
+		accountID,
+		email,
+		hashedPass,
 		maxUsers,
-		[]byte(SigningKey),
+		[]byte(signingKey),
 		maxUsersUpgraded,
 		defaultCookieName,
 		db,

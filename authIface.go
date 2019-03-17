@@ -2,6 +2,7 @@ package main
 
 import "net/http"
 
+//Authenticator interface for Authenticator package use
 type Authenticator interface {
 	IsAuthenticated(r *http.Request) bool
 	CleanupExpiredTokens() error

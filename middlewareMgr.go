@@ -6,10 +6,12 @@ import (
 	"reflect"
 )
 
+//MiddlewareManager class to manage different middlerwares and chaining
 type MiddlewareManager struct {
 	a Authenticator
 }
 
+//GetNewMiddlewareManager returns a new MiddlewareManager
 func GetNewMiddlewareManager(a interface{}) *MiddlewareManager {
 	return &MiddlewareManager{
 		a: reflect.ValueOf(a).Interface().(Authenticator),

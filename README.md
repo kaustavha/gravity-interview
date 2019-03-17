@@ -2,7 +2,6 @@
 
 3 main components, front-end, server, fakeiot data generator. and a DB.  
 
-
 1. postgres setup
 https://docs.docker.com/samples/library/postgres/
 Note: The pass is base64 mysqlpassword

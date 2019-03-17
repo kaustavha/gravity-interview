@@ -5,10 +5,13 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+//DB is a wrapper struct around gorm db
 type DB struct {
-	dbconn *gorm.DB
+	dbconn    *gorm.DB
+	tableName string
 }
 
+//SaveInDB saves an admin acc in db
 func (db *DB) SaveInDB(a *AdminAccount) error {
 	dbconn := db.dbconn
 	_, err := db.FindAdmin(a.AccountID)
@@ -16,7 +19,7 @@ func (db *DB) SaveInDB(a *AdminAccount) error {
 	if trace.IsNotFound(err) {
 		err = dbconn.Create(&a).Error
 	} else if err == nil {
-		err = db.updateById(a)
+		err = db.updateByID(a)
 	}
 
 	if err != nil {
@@ -25,18 +28,20 @@ func (db *DB) SaveInDB(a *AdminAccount) error {
 	return nil
 }
 
-func (db *DB) updateById(a *AdminAccount) error {
+func (db *DB) updateByID(a *AdminAccount) error {
 	conn := db.dbconn
-	err := conn.Table("admin_accounts").Where("account_id = ?", a.AccountID).Updates(a)
+	err := conn.Table(db.tableName).Where("account_id = ?", a.AccountID).Updates(a)
 	if err.Error != nil {
 		return trace.Wrap(err.Error)
 	}
 	return nil
 }
-func (db *DB) FindAdmin(accountId string) (*AdminAccount, error) {
+
+//FindAdmin returns the admin user data from the DB
+func (db *DB) FindAdmin(AccountID string) (*AdminAccount, error) {
 	adminFound := &AdminAccount{}
 	conn := db.dbconn
-	record := conn.Table("admin_accounts").Where("account_id = ?", accountId).Find(&adminFound)
+	record := conn.Table(db.tableName).Where("account_id = ?", AccountID).Find(&adminFound)
 	if record.RecordNotFound() {
 		return nil, trace.NotFound("RecordNotFound")
 	}
@@ -45,17 +50,18 @@ func (db *DB) FindAdmin(accountId string) (*AdminAccount, error) {
 	if record.Error != nil {
 		return nil, trace.Wrap(record.Error)
 	}
-	if adminFound.AccountID != accountId {
+	if adminFound.AccountID != AccountID {
 		return nil, trace.NotFound("Acc id doenst match")
 	}
 	return adminFound, nil
 }
 
-func (db *DB) Setup(defaultTableName string) error {
+//Setup our db by automigrating tables over
+func (db *DB) Setup() error {
 	conn := db.dbconn
 	conn.AutoMigrate(&AdminAccount{})
 
-	if !conn.HasTable(defaultTableName) {
+	if !conn.HasTable(db.tableName) {
 		return trace.NotFound("Table not found in DB, Migration fail")
 	}
 	return nil

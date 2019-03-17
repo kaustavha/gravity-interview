@@ -9,7 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type Defaults struct {
+type defaults struct {
 	AccountID            string
 	Email                string
 	Password             string
@@ -17,19 +17,20 @@ type Defaults struct {
 	MaxUsersAfterUpgrade int
 	SigningKey           []byte
 	DefaultCookieName    string
-	TableName            string //admin_accounts
 }
 
+// Authenticator is main struct for authentication actions
 type Authenticator struct {
 	Database *DB
-	Expected Defaults
+	Expected defaults
 	Sessions map[string]*AdminAccount // map session -> email for lookup in activeAccounts map
 	Tokens   []string                 // set of active session token strings
 }
 
+// NewAuthenticator returns a new preconfigured authenticator
 func NewAuthenticator(a string, e string, p string, m int, s []byte, ma int, c string, db *gorm.DB) (*Authenticator, error) {
 	authenticator := &Authenticator{
-		Expected: Defaults{
+		Expected: defaults{
 			AccountID:            a,
 			Email:                e,
 			Password:             p,
@@ -37,18 +38,19 @@ func NewAuthenticator(a string, e string, p string, m int, s []byte, ma int, c s
 			SigningKey:           s,
 			MaxUsersAfterUpgrade: ma,
 			DefaultCookieName:    c,
-			TableName:            "admin_accounts",
 		},
 		Database: &DB{
-			dbconn: db,
+			dbconn:    db,
+			tableName: "admin_accounts",
 		},
 		Tokens:   []string{},
 		Sessions: make(map[string]*AdminAccount),
 	}
-	err := authenticator.Database.Setup(authenticator.Expected.TableName)
+	err := authenticator.Database.Setup()
 	return authenticator, err
 }
 
+//LogoutHandler clears a users session and logs them out
 func (a *Authenticator) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := a.getSessionToken(r)
 	if err != nil {
@@ -72,13 +74,19 @@ func (a *Authenticator) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type credentials struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+//LoginHandler logs an admin user in and sets them in the session
 func (a *Authenticator) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if a.IsAuthenticated(r) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	var creds Credentials
+	var creds credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -119,7 +127,7 @@ func (a *Authenticator) login(email string, password string) (*AdminAccount, err
 }
 
 func (a *Authenticator) logout(sessionToken string) (*AdminAccount, error) {
-	acc, err := a.FindUserAccountFromActiveToken(sessionToken)
+	acc, err := a.findUserAccountFromActiveToken(sessionToken)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -130,6 +138,7 @@ func (a *Authenticator) logout(sessionToken string) (*AdminAccount, error) {
 	return acc, nil
 }
 
+// IsAuthenticated will return true if there is an active session with this user token
 func (a *Authenticator) IsAuthenticated(r *http.Request) bool {
 	sessionToken, err := a.getSessionToken(r)
 	if err != nil {
@@ -184,6 +193,7 @@ func (a *Authenticator) updateSessionDetails(admin *AdminAccount) {
 	}
 }
 
+//CleanupExpiredTokens used in middlewares to clear expired tokens on calls
 func (a *Authenticator) CleanupExpiredTokens() error {
 	for _, account := range a.Sessions {
 		shouldClean := account.HasTokenExpired()
@@ -197,7 +207,7 @@ func (a *Authenticator) CleanupExpiredTokens() error {
 	return nil
 }
 
-func (a *Authenticator) FindUserAccountFromActiveToken(token string) (*AdminAccount, error) {
+func (a *Authenticator) findUserAccountFromActiveToken(token string) (*AdminAccount, error) {
 	acc, found := a.Sessions[token]
 	if found != false {
 		return acc, nil
@@ -205,12 +215,13 @@ func (a *Authenticator) FindUserAccountFromActiveToken(token string) (*AdminAcco
 	return acc, trace.NotFound("RecordNotFound")
 }
 
+//Upgrade an admin user and increase user storage cap
 func (a *Authenticator) Upgrade(r *http.Request) ([]byte, error) {
 	token, err := a.getSessionToken(r)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	acc, err := a.FindUserAccountFromActiveToken(token)
+	acc, err := a.findUserAccountFromActiveToken(token)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -224,12 +235,13 @@ func (a *Authenticator) Upgrade(r *http.Request) ([]byte, error) {
 	return info, nil
 }
 
+//GetInfo returns the json info expected by the front end
 func (a *Authenticator) GetInfo(r *http.Request) ([]byte, error) {
 	token, err := a.getSessionToken(r)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	acc, err := a.FindUserAccountFromActiveToken(token)
+	acc, err := a.findUserAccountFromActiveToken(token)
 	if err != nil {
 		if trace.IsNotFound(err) {
 			acc, err = a.Database.FindAdmin(a.Expected.AccountID)
