@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gravitational/trace"
 	"github.com/jinzhu/gorm"
@@ -124,9 +123,7 @@ func (a *Authenticator) logout(sessionToken string) (*AdminAccount, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	a.clearSessionDetails(acc)
-	acc.ClearToken()
-	err = a.Database.SaveInDB(acc)
+	err = a.clearSessionDetails(acc)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -167,12 +164,16 @@ func (a *Authenticator) decodeAndCheckCreds(password string, email string) (stri
 	return codedPass, nil
 }
 
-func (a *Authenticator) clearSessionDetails(admin *AdminAccount) {
+func (a *Authenticator) clearSessionDetails(admin *AdminAccount) error {
 	token := admin.SessionToken
 	a.Tokens = deleteAllInSlice(a.Tokens, token)
 	delete(a.Sessions, token)
-	admin.SessionToken = ""
-	admin.SessionExpiry = time.Now()
+	admin.ClearToken()
+	err := a.Database.SaveInDB(admin)
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	return nil
 }
 
 func (a *Authenticator) updateSessionDetails(admin *AdminAccount) {
@@ -183,13 +184,17 @@ func (a *Authenticator) updateSessionDetails(admin *AdminAccount) {
 	}
 }
 
-func (a *Authenticator) CleanupExpiredTokens() {
+func (a *Authenticator) CleanupExpiredTokens() error {
 	for _, account := range a.Sessions {
 		shouldClean := account.HasTokenExpired()
 		if shouldClean && account.SessionToken != "" {
-			a.clearSessionDetails(account)
+			err := a.clearSessionDetails(account)
+			if err != nil {
+				return trace.Wrap(err)
+			}
 		}
 	}
+	return nil
 }
 
 func (a *Authenticator) FindUserAccountFromActiveToken(token string) (*AdminAccount, error) {

@@ -36,7 +36,11 @@ func (m *MiddlewareManager) authMiddleware(next http.HandlerFunc) http.HandlerFu
 
 func (m *MiddlewareManager) cleanupExpiredTokensMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		m.a.CleanupExpiredTokens()
+		err := m.a.CleanupExpiredTokens()
+		if err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, "Error clearing tokens", http.StatusInternalServerError)
+		}
 		next(w, r)
 		return
 	}
