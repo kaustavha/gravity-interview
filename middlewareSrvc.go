@@ -6,27 +6,27 @@ import (
 	"reflect"
 )
 
-//MiddlewareManager class to manage different middlerwares and chaining
-type MiddlewareManager struct {
+//MiddlewareService class to manage different middlerwares and chaining
+type MiddlewareService struct {
 	a Authenticator
 }
 
-//GetNewMiddlewareManager returns a new MiddlewareManager
-func GetNewMiddlewareManager(a interface{}) *MiddlewareManager {
-	return &MiddlewareManager{
+//GetNewMiddlewareService returns a new MiddlewareManager
+func GetNewMiddlewareService(a interface{}) *MiddlewareService {
+	return &MiddlewareService{
 		a: reflect.ValueOf(a).Interface().(Authenticator),
 	}
 }
 
-func (m *MiddlewareManager) getWrappedLoginHandler(LoginHandler http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) getWrappedLoginHandler(LoginHandler http.HandlerFunc) http.HandlerFunc {
 	return m.loggingMiddleware(m.cleanupExpiredTokensMiddleware(LoginHandler))
 }
 
-func (m *MiddlewareManager) getWrappedIOTDataHandler(IOTDataHandler http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) getWrappedIOTDataHandler(IOTDataHandler http.HandlerFunc) http.HandlerFunc {
 	return m.loggingMiddleware(IOTDataHandler)
 }
 
-func (m *MiddlewareManager) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if found := m.a.IsAuthenticated(r); found {
 			next(w, r)
@@ -36,11 +36,10 @@ func (m *MiddlewareManager) authMiddleware(next http.HandlerFunc) http.HandlerFu
 	}
 }
 
-func (m *MiddlewareManager) cleanupExpiredTokensMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) cleanupExpiredTokensMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := m.a.CleanupExpiredTokens()
 		if err != nil {
-			fmt.Println(err.Error())
 			http.Error(w, "Error clearing tokens", http.StatusInternalServerError)
 		}
 		next(w, r)
@@ -48,7 +47,7 @@ func (m *MiddlewareManager) cleanupExpiredTokensMiddleware(next http.HandlerFunc
 	}
 }
 
-func (m *MiddlewareManager) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("API endpoint hit: ", r.RequestURI)
 		next(w, r)
@@ -56,7 +55,7 @@ func (m *MiddlewareManager) loggingMiddleware(next http.HandlerFunc) http.Handle
 	}
 }
 
-func (m *MiddlewareManager) applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
+func (m *MiddlewareService) applyMiddlewares(next http.HandlerFunc) http.HandlerFunc {
 	return m.loggingMiddleware(
 		m.cleanupExpiredTokensMiddleware(
 			m.authMiddleware(next)))

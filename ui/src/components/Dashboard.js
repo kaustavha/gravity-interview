@@ -4,7 +4,6 @@ import {
     callAuthcheckApi,
     callDashboardApi,
     callUpgradeApi,
-    callUpgradeCheckApi,
     callLogoutApi
 } from "../util/api";
 
@@ -26,31 +25,34 @@ export default class Dashboard extends React.Component {
         this.updateDashboard = this.updateDashboard.bind(this)
         this.handleLogout = this.handleLogout.bind(this)
         this.handleUpgrade = this.handleUpgrade.bind(this)
+        this.setInitialDashboardState = this.setInitialDashboardState.bind(this)
         this.timer = null;
     }
 
-    componentDidMount() {
+    componentWillMount() {
         // Reroute non-authorized users to login
-        return callAuthcheckApi().then(res => {
-            if (res) {
-                callUpgradeCheckApi().then(resJson => {
-                    if (resJson) {
-                        this.setState({
-                            isAccountUpgraded: resJson.IsUpgraded,
-                            userLimit: resJson.MaxUsers,
-                            userCount: resJson.Users
-                        });
-                        this.updateDashboard()
-                    }
-                })
-            } else {
-                this.setState({redirectToReferrer: true})
-            }
-        });
+        return callAuthcheckApi().then(this.setInitialDashboardState)
     }
 
     componentWillUnmount() {
         clearTimeout(this.timer)
+    }
+
+    setInitialDashboardState(res) {
+        if (res) {
+            return callDashboardApi().then(resJson => {
+                if (resJson) {
+                    this.setState({
+                        isAccountUpgraded: resJson.IsUpgraded,
+                        userLimit: resJson.MaxUsers,
+                        userCount: resJson.Users
+                    });
+                    this.updateDashboard()
+                }
+            })
+        } else {
+            this.setState({redirectToReferrer: true})
+        }
     }
 
     updateDashboard() {
@@ -70,12 +72,12 @@ export default class Dashboard extends React.Component {
                 }
             } else {
                 clearTimeout(this.timer)
-                // this.setState({
-                //     redirectToReferrer: true
-                // })
-                console.log('update db fail')
+                this.setState({
+                    redirectToReferrer: true
+                })
+                console.log('update db fail', this, resJson)
             }
-        });
+        })
     }
 
     handleLogout() {
@@ -95,7 +97,7 @@ export default class Dashboard extends React.Component {
                     userCount: resJson.Users
                 })
                 if (!this.state.currentlyUpdatingDB) {
-                    this.updateDashboard(); // begin refreshing dashboard again
+                    this.updateDashboard() // begin refreshing dashboard again
                 }
             }
         })

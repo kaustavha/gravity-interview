@@ -56,7 +56,7 @@ func (a *AdminAccount) ClearToken() {
 
 // UpdateToken refreshes a admin accs auth token and session expire
 func (a *AdminAccount) UpdateToken(password string, mySigningKey []byte) {
-	expiry := time.Now().Add(120 * time.Second)
+	expiry := time.Now().Add(120 * time.Minute)
 	tokenString := getJWT(a.Email, password, expiry, mySigningKey)
 	a.SessionExpiry = expiry
 	a.SessionToken = tokenString

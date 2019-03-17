@@ -59,11 +59,6 @@ func createDBConn() (*gorm.DB, error) {
 	return conn, nil
 }
 
-//AuthcheckHandler basic handler, returns ok always, auth check is done by middleware
-func AuthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
 func main() {
 	fmt.Println("App boot up...")
 
@@ -75,11 +70,14 @@ func main() {
 		trace.SetDebug(false)
 	}
 
+	// Setup DB
 	db, err := createDBConn()
 	if err != nil {
 		trace.Fatalf("Error connecting to Database %v", err)
 		fmt.Println(err.Error())
 	}
+
+	// Setup Authenticator pkg
 	a, err := authenticator.NewAuthenticator(
 		accountID,
 		email,
@@ -95,10 +93,22 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	// init middleware manager
-	m := GetNewMiddlewareManager(a)
+	// init middleware Service
+	m := GetNewMiddlewareService(a)
 
-	// init iotdata handler
+	// Auth routes
+	as := GetNewAuthService(a, defaultCookieName)
+	http.HandleFunc("/api/login", m.getWrappedLoginHandler(as.LoginHandler))
+	http.HandleFunc("/api/authcheck", m.applyMiddlewares(as.AuthcheckHandler))
+	http.HandleFunc("/api/logout", m.applyMiddlewares(as.LogoutHandler))
+
+	// Dashboard info routes
+	d := GetNewDashboardService(a)
+	http.HandleFunc("/api/dashboard", m.applyMiddlewares(d.DashboardHandler))
+	http.HandleFunc("/api/upgrade", m.applyMiddlewares(d.UpgradeHandler))
+	http.HandleFunc("/api/upgradecheck", m.applyMiddlewares(d.UpgradeCheckHandler))
+
+	// iot data handler/metric route
 	i := iotdatahandler.GetNewIOTDataHandler(
 		a,
 		contentTypeHeader,
@@ -107,17 +117,7 @@ func main() {
 		defaultBearerToken,
 		db,
 	)
-
-	d := GetNewDashboardService(a)
-
-	http.HandleFunc("/api/login", m.getWrappedLoginHandler(a.LoginHandler))
-	http.HandleFunc("/api/authcheck", m.applyMiddlewares(AuthcheckHandler))
-	http.HandleFunc("/api/logout", m.applyMiddlewares(a.LogoutHandler))
 	http.HandleFunc("/metrics", m.getWrappedIOTDataHandler(i.IOTDataHandler))
-
-	http.HandleFunc("/api/dashboard", m.applyMiddlewares(d.DashboardHandler))
-	http.HandleFunc("/api/upgrade", m.applyMiddlewares(d.UpgradeHandler))
-	http.HandleFunc("/api/upgradecheck", m.applyMiddlewares(d.UpgradeCheckHandler))
 
 	port := os.Getenv("PORT") // TODO - add env vars
 	if port == "" {

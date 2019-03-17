@@ -11,6 +11,18 @@ type DB struct {
 	tableName string
 }
 
+//Setup our db by automigrating tables over
+func (db *DB) Setup() error {
+	conn := db.dbconn
+
+	conn.AutoMigrate(&AdminAccount{})
+
+	if !conn.HasTable(db.tableName) {
+		return trace.NotFound("Table not found in DB, Migration fail")
+	}
+	return nil
+}
+
 //SaveInDB saves an admin acc in db
 func (db *DB) SaveInDB(a *AdminAccount) error {
 	dbconn := db.dbconn
@@ -28,11 +40,20 @@ func (db *DB) SaveInDB(a *AdminAccount) error {
 	return nil
 }
 
-func (db *DB) updateByID(a *AdminAccount) error {
+func (db *DB) UpdateUserCountByID(a *AdminAccount) error {
 	conn := db.dbconn
-	err := conn.Table(db.tableName).Where("account_id = ?", a.AccountID).Updates(a)
-	if err.Error != nil {
-		return trace.Wrap(err.Error)
+
+	_, err := db.FindAdmin(a.AccountID)
+
+	if trace.IsNotFound(err) {
+		err = conn.Create(&a).Error
+	} else {
+		err = conn.Table(db.tableName).Where("account_id = ?", a.AccountID).Updates(&AdminAccount{
+			Users: a.Users,
+		}).Error
+	}
+	if err != nil {
+		return trace.Wrap(err)
 	}
 	return nil
 }
@@ -56,13 +77,21 @@ func (db *DB) FindAdmin(AccountID string) (*AdminAccount, error) {
 	return adminFound, nil
 }
 
-//Setup our db by automigrating tables over
-func (db *DB) Setup() error {
+func (db *DB) updateByID(a *AdminAccount) error {
 	conn := db.dbconn
-	conn.AutoMigrate(&AdminAccount{})
-
-	if !conn.HasTable(db.tableName) {
-		return trace.NotFound("Table not found in DB, Migration fail")
+	err := conn.Table(db.tableName).Where("account_id = ?", a.AccountID).Updates(&AdminAccount{
+		SessionExpiry: a.SessionExpiry,
+		SessionToken:  a.SessionToken,
+		IsUpgraded:    a.IsUpgraded,
+		MaxUsers:      a.MaxUsers,
+	})
+	if err.Error != nil {
+		return trace.Wrap(err.Error)
 	}
 	return nil
+}
+
+func (db *DB) resetDB() {
+	conn := db.dbconn
+	conn.DropTableIfExists(&AdminAccount{})
 }

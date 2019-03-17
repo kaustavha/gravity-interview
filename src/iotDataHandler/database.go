@@ -23,7 +23,6 @@ func GetNewIotDataHandlerDB(db *gorm.DB) *IotDataHandlerDB {
 //SaveInDB saves a metric in the users db and updates the user count in the assoc admin
 func (db *IotDataHandlerDB) SaveInDB(m *Metric) error {
 	_, err := db.findMetric(m)
-
 	// handle duplciate users
 	if trace.IsNotFound(err) {
 		err = db.dbconn.Create(&m).Error

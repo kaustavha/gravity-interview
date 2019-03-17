@@ -8,6 +8,7 @@ import (
 	"github.com/kaustavha/gravity-interview/src/authenticator"
 )
 
+// Testing philosophy: Test the top level to-be-consumed API, and test for the different cases handled by internals
 func TestAuthMiddleware_withAuthcheckHandler_Success(t *testing.T) {
 	// setup
 	db, err := createDBConn()
@@ -21,13 +22,15 @@ func TestAuthMiddleware_withAuthcheckHandler_Success(t *testing.T) {
 		defaultCookieName,
 		db,
 	)
-	m := GetNewMiddlewareManager(a)
+	m := GetNewMiddlewareService(a)
+
+	as := GetNewAuthService(a, defaultCookieName)
 	// end setup
 
 	req, err := http.NewRequest("GET", "/api/authcheck", nil)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(m.applyMiddlewares(AuthcheckHandler))
+	handler := http.HandlerFunc(m.applyMiddlewares(as.AuthcheckHandler))
 	handler.ServeHTTP(rr, req)
 
 	if err != nil {

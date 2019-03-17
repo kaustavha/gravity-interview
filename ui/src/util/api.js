@@ -1,5 +1,29 @@
+/**
+ * Api Helpers
+ */
+const callLoginApi = async (email, password) => _callApi('login', {
+    method: 'post',
+    body: JSON.stringify({
+        Email: email,
+        Password: password
+    })
+})
 
-// Returns a call with auth creds to api/url
+const callLogoutApi = async () => _get('logout')
+
+const callAuthcheckApi = async () => _get('authcheck')
+
+const callUpgradeApi = async () => _get('upgrade', true)
+
+const callDashboardApi = async () => _get('dashboard', true)
+
+// Internals
+/**
+ * Returns a call with auth creds to api/url
+ * @param {string} url url endpoint to proxy to, will prepend /api/
+ * @param {*} extensions any extension options to merge into our req
+ * @param {*} parseResults Should we parse results? if false will not attempt to read response json stream
+ */
 const _callApi = async (url, extensions, parseResults=false) => {
     const response = await fetch(`/api/${url}`, Object.assign({
         headers: {
@@ -28,29 +52,10 @@ const _callApi = async (url, extensions, parseResults=false) => {
 
 const _get = async (url, parseResults) => _callApi(url, {method: 'get'}, parseResults);
 
-const callAuthcheckApi = async () => _get('authcheck')
-
-const callUpgradeApi = async () => _get('upgrade', true)
-
-const callUpgradeCheckApi = async () => _get('upgradecheck', true)
-
-const callDashboardApi = async () => _get('dashboard', true)
-
-const callLogoutApi = async () => _get('logout')
-
-const callLoginApi = async (email, password) => _callApi('login', {
-    method: 'post',
-    body: JSON.stringify({
-        Email: email,
-        Password: password
-    })
-})
-
 export {
     callDashboardApi,
     callAuthcheckApi,
     callLoginApi,
     callUpgradeApi,
-    callUpgradeCheckApi,
     callLogoutApi
 }

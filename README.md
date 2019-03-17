@@ -85,8 +85,25 @@ The server is written in Go and used gorm
 
 # Testing
 
+Testing philosophy: Test the top level to-be-consumed API, and test for the different cases handled by internals
 For server test: `go test`  
 For front-end tests: `cd ui && npm test`  
+
+---
+
+## Debugging react tests
+The first issue you might face will be a complaint that the watcher can only run on Darwin:
+Soln: https://github.com/expo/expo/issues/854
+
+Second issue: Tests fail with:
+```
+TypeError: Cannot assign to read 
+only property 'Symbol(Symbol.toString
+Tag)' of object '#<process>'
+```
+Soln: https://github.com/facebook/jest/issues/8069
+Use this: https://github.com/creationix/nvm 
+And `nvm use 11.10.1`. Tim Caswell / Creationix the author can be one of my references too I think, I worked p retty closely with him back at Rackspace. 
 
 ---
 
@@ -113,6 +130,7 @@ For front-end tests: `cd ui && npm test`
     - [x] figure out proper use of bearer tokens and CA certs for fakeiot
     - [x] 1 unit test
 
+---
 
 # Assumptions:
 - Frontend db polls the backend every 1s instead of keeping a socket open or any other solns - this is fragile and may stop updating the FE DB if we change tabs/windows and come back
@@ -127,5 +145,4 @@ For front-end tests: `cd ui && npm test`
 - if the iotdata generator posts 2 users with the same accid, userid, we assume it was a mistake and dont create a new user but update the timestamp
 - if the timestamp incoming is empty or equals to Time.IsZero() then we reject the metric - this case is not part of the iot data gen tests
 - metrics generator > we create a new item in the db every time, time out and batch write may be faster. We also update the active users details at this time if the acc id matches
-# Bugs
-- currently maybe due to race, if we have metrics server running and pushing data, login followed by logout followed by login will fail. All further login attempts will show a valid dashboard then redirect on the next dashboard update
+- iotdata http handler hands off iotdatahandler package, although for dashbooard and auth handlers we create the handlers from the authenticator package in package:main
