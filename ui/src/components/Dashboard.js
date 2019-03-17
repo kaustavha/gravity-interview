@@ -51,15 +51,15 @@ export default class Dashboard extends React.Component {
     updateDashboard() {
         return callDashboardApi().then(resJson => {
             if (resJson) {
-                if (resJson.userCount < this.state.userLimit) {
+                if (resJson.Users < this.state.userLimit) {
                     this.setState({
-                        userCount: resJson.userCount,
+                        userCount: resJson.Users,
                         currentlyUpdatingDB: true
                     });
                     setTimeout(this.updateDashboard.bind(this), 1000)
                 } else {
                     this.setState({
-                        userCount: resJson.userCount,
+                        userCount: resJson.Users,
                         currentlyUpdatingDB: false
                     });
                 }

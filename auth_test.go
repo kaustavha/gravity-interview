@@ -4,15 +4,30 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/kaustavha/gravity-interview/src/authenticator"
 )
 
 func TestAuthMiddleware_withAuthcheckHandler_Success(t *testing.T) {
-	InitAuth()
-	CreateDBConn()
+	// setup
+	db, err := createDBConn()
+	a, err := authenticator.NewAuthenticator(
+		AccountID,
+		Email,
+		HashedPass,
+		maxUsers,
+		[]byte(SigningKey),
+		maxUsersUpgraded,
+		defaultCookieName,
+		db,
+	)
+	m := GetNewMiddlewareManager(a)
+	// end setup
+
 	req, err := http.NewRequest("GET", "/api/authcheck", nil)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(applyMiddlewares(AuthcheckHandler))
+	handler := http.HandlerFunc(m.applyMiddlewares(AuthcheckHandler))
 	handler.ServeHTTP(rr, req)
 
 	if err != nil {

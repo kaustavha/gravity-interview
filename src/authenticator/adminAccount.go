@@ -13,7 +13,7 @@ type AdminAccount struct {
 	Email                string
 	SessionToken         string
 	SessionExpiry        time.Time
-	AccountID            string `gorm:"primary_key;auto_increment:false"`
+	AccountID            string
 	IsUpgraded           bool
 	Users                int
 	MaxUsers             int

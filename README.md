@@ -113,3 +113,18 @@ For front-end tests: `cd ui && npm test`
     - [x] edge case/bad data handling from fakeiot generator
     - [x] figure out proper use of bearer tokens and CA certs for fakeiot
     - [x] 1 unit test
+
+
+# Assumptions:
+- Frontend db polls the backend every 1s instead of keeping a socket open or any other solns - this is fragile and may stop updating the FE DB if we change tabs/windows and come back
+- backend - dashboard getinfo - doesnt hit database if we have an active account
+
+- Multiple admin users are allowed to be logged in at the same time with different sessions but the same credentials
+- Auth based redirects are handled clientside not server side
+- we console.log any not ok responses on the frontend for debugging
+- Not sure if cross dependency between go packages is good, i.e. pkg 1 requires apis from pkg 2 and an interface of pkg 2 is instantiated when we init pkg 1
+- Ideally should use a FOSS auth handler like authboss but this is a good excercise in how these things work
+- authenticator has more users logic than i think is good, but i think its an acceptable tradeoff right now
+- if the iotdata generator posts 2 users with the same accid, userid, we assume it was a mistake and dont create a new user but update the timestamp
+- if the timestamp incoming is empty or equals to Time.IsZero() then we reject the metric - this case is not part of the iot data gen tests
+- metrics generator > we create a new item in the db every time, time out and batch write may be faster. We also update the active users details at this time if the acc id matches

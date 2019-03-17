@@ -200,13 +200,18 @@ func (a *Authenticator) FindUserAccountFromActiveToken(token string) (*AdminAcco
 	return acc, trace.NotFound("RecordNotFound")
 }
 
-func (a *Authenticator) Upgrade(token string) ([]byte, error) {
+func (a *Authenticator) Upgrade(r *http.Request) ([]byte, error) {
+	token, err := a.getSessionToken(r)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
 	acc, err := a.FindUserAccountFromActiveToken(token)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	acc.Upgrade()
 	a.Database.SaveInDB(acc)
+	a.updateSessionDetails(acc)
 	info, err := acc.GetInfo()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -214,8 +219,31 @@ func (a *Authenticator) Upgrade(token string) ([]byte, error) {
 	return info, nil
 }
 
+func (a *Authenticator) GetInfo(r *http.Request) ([]byte, error) {
+	token, err := a.getSessionToken(r)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	acc, err := a.FindUserAccountFromActiveToken(token)
+	if err != nil {
+		if trace.IsNotFound(err) {
+			acc, err = a.Database.FindAdmin(a.Expected.AccountID)
+			a.updateSessionDetails(acc)
+		}
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+	}
+
+	resJSON, err := acc.GetInfo()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return resJSON, nil
+}
+
 // IncrementUserCount is used by the iotdata handler to increment the users in our acc
-func (a *Authenticator) IncrementUserCountAPI(token string, accountID string) error {
+func (a *Authenticator) IncrementUserCount(accountID string) error {
 	acc, err := a.Database.FindAdmin(accountID)
 	if err != nil {
 		return trace.Wrap(err)
@@ -223,6 +251,7 @@ func (a *Authenticator) IncrementUserCountAPI(token string, accountID string) er
 
 	acc.IncrementUserCount()
 	a.Database.SaveInDB(acc)
+	a.updateSessionDetails(acc)
 	return nil
 }
 

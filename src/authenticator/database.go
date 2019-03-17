@@ -16,7 +16,7 @@ func (db *DB) SaveInDB(a *AdminAccount) error {
 	if trace.IsNotFound(err) {
 		err = dbconn.Create(&a).Error
 	} else if err == nil {
-		err = db.updateById(*a)
+		err = db.updateById(a)
 	}
 
 	if err != nil {
@@ -25,7 +25,7 @@ func (db *DB) SaveInDB(a *AdminAccount) error {
 	return nil
 }
 
-func (db *DB) updateById(a AdminAccount) error {
+func (db *DB) updateById(a *AdminAccount) error {
 	conn := db.dbconn
 	err := conn.Table("admin_accounts").Where("account_id = ?", a.AccountID).Updates(a)
 	if err.Error != nil {
