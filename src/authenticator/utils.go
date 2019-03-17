@@ -1,4 +1,4 @@
-package main
+package authenticator
 
 import (
 	"time"
@@ -35,11 +35,11 @@ func hasTokenExpired(expiry time.Time) bool {
 	return hasPassed
 }
 
-func getJWT(creds Credentials, expiry time.Time, mySigningKey []byte) string {
+func getJWT(email string, password string, expiry time.Time, mySigningKey []byte) string {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["Email"] = creds.Email
-	claims["Password"] = creds.Password
+	claims["Email"] = email
+	claims["Password"] = password
 	claims["exp"] = expiry
 	tokenString, _ := token.SignedString(mySigningKey)
 	return tokenString
