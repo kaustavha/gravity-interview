@@ -12,7 +12,7 @@ import RouterHack from "./RouterHack"
 
 export default class Dashboard extends React.Component {
     constructor(props) {
-        super(props);
+        super(props)
         this.state = {
             loginSuccess: false,
             redirectToReferrer: false,
@@ -39,11 +39,11 @@ export default class Dashboard extends React.Component {
                             userLimit: resJson.MaxUsers,
                             userCount: resJson.Users
                         });
-                        this.updateDashboard();
+                        this.updateDashboard()
                     }
                 })
             } else {
-                this.setState({redirectToReferrer: true});
+                this.setState({redirectToReferrer: true})
             }
         });
     }
@@ -56,7 +56,7 @@ export default class Dashboard extends React.Component {
                         userCount: resJson.userCount,
                         currentlyUpdatingDB: true
                     });
-                    setTimeout(this.updateDashboard.bind(this), 1000);
+                    setTimeout(this.updateDashboard.bind(this), 1000)
                 } else {
                     this.setState({
                         userCount: resJson.userCount,
@@ -76,8 +76,8 @@ export default class Dashboard extends React.Component {
         return callLogoutApi().then(() => {
             this.setState({
                 redirectToReferrer: true
-            });
-        });
+            })
+        })
     }
 
     handleUpgrade() {
@@ -92,7 +92,7 @@ export default class Dashboard extends React.Component {
                     this.updateDashboard(); // begin refreshing dashboard again
                 }
             }
-        });
+        })
     }
 
     render() {
