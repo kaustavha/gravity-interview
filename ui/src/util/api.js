@@ -17,13 +17,6 @@ const callLoginApi = async (email, password) => _callApi('login', {
     })
 })
 
-const callApi = async () => {
-    // DEPRECATED - test util
-    const response = await fetch('/api');
-    if (response.status !== 200) throw Error(`Err: ${response}`);
-    return response;
-};
-
 // Returns a call with auth creds to api/url
 const _callApi = async (url, extensions, parseResults=false) => {
     const response = await fetch(`/api/${url}`, Object.assign({
@@ -55,7 +48,6 @@ const _get = async (url, parseResults) => _callApi(url, {method: 'get'}, parseRe
 
 export {
     callDashboardApi,
-    callApi,
     callAuthcheckApi,
     callLoginApi,
     callUpgradeApi,

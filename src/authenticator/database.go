@@ -9,20 +9,29 @@ type DB struct {
 	dbconn *gorm.DB
 }
 
-func (db *DB) SaveInDB(a *AdminAccount) {
+func (db *DB) SaveInDB(a *AdminAccount) error {
 	dbconn := db.dbconn
-	_, err := db.FindAdmin(a.AccountId)
+	_, err := db.FindAdmin(a.AccountID)
 
 	if trace.IsNotFound(err) {
-		dbconn.Create(&a)
+		err = dbconn.Create(&a).Error
 	} else if err == nil {
-		db.UpdateById(*a)
+		err = db.updateById(*a)
 	}
+
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	return nil
 }
 
-func (db *DB) UpdateById(a AdminAccount) {
+func (db *DB) updateById(a AdminAccount) error {
 	conn := db.dbconn
-	conn.Table("admin_accounts").Where("account_id = ?", a.AccountId).Updates(a)
+	err := conn.Table("admin_accounts").Where("account_id = ?", a.AccountID).Updates(a)
+	if err.Error != nil {
+		return trace.Wrap(err.Error)
+	}
+	return nil
 }
 func (db *DB) FindAdmin(accountId string) (*AdminAccount, error) {
 	adminFound := &AdminAccount{}
@@ -31,10 +40,12 @@ func (db *DB) FindAdmin(accountId string) (*AdminAccount, error) {
 	if record.RecordNotFound() {
 		return nil, trace.NotFound("RecordNotFound")
 	}
+
+	// All unahndled errors e.g. db conn errs
 	if record.Error != nil {
-		return nil, record.Error
+		return nil, trace.Wrap(record.Error)
 	}
-	if adminFound.AccountId != accountId {
+	if adminFound.AccountID != accountId {
 		return nil, trace.NotFound("Acc id doenst match")
 	}
 	return adminFound, nil

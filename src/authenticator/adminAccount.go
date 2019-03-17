@@ -1,29 +1,39 @@
 package authenticator
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/gravitational/trace"
 	"github.com/jinzhu/gorm"
 )
 
 type AdminAccount struct {
 	gorm.Model
-	Email         string
-	SessionToken  string
-	SessionExpiry time.Time
-	IsUpgraded    bool
-	AccountId     string
-	Users         int
-	MaxUsers      int
+	Email                string
+	SessionToken         string
+	SessionExpiry        time.Time
+	AccountID            string
+	IsUpgraded           bool
+	Users                int
+	MaxUsers             int
+	MaxUsersAfterUpgrade int
+}
+
+type DashboardInfo struct {
+	Users      int  `json:"Users"`
+	IsUpgraded bool `json:"IsUpgraded"`
+	MaxUsers   int  `json:"MaxUsers"`
 }
 
 func GetDefaultAdminAccount(expected Defaults) *AdminAccount {
 	acc := &AdminAccount{
-		Email:      expected.Email,
-		IsUpgraded: false,
-		AccountId:  expected.AccountID,
-		Users:      0,
-		MaxUsers:   expected.MaxUsers,
+		Email:                expected.Email,
+		IsUpgraded:           false,
+		AccountID:            expected.AccountID,
+		Users:                0,
+		MaxUsers:             expected.MaxUsers,
+		MaxUsersAfterUpgrade: expected.MaxUsersAfterUpgrade,
 	}
 	return acc
 }
@@ -34,6 +44,11 @@ func (a *AdminAccount) HasTokenExpired() bool {
 	return hasPassed
 }
 
+func (a *AdminAccount) ClearToken() {
+	a.SessionExpiry = time.Now()
+	a.SessionToken = ""
+}
+
 func (a *AdminAccount) UpdateToken(password string, mySigningKey []byte) {
 	expiry := time.Now().Add(120 * time.Second)
 	tokenString := getJWT(a.Email, password, expiry, mySigningKey)
@@ -41,16 +56,27 @@ func (a *AdminAccount) UpdateToken(password string, mySigningKey []byte) {
 	a.SessionToken = tokenString
 }
 
-// isAccountUpgraded: resJson.IsUpgraded,
-// userLimit: resJson.MaxUsers,
-// userCount: resJson.Users
-
+// Upgrade upgrades an admin acc
 func (a *AdminAccount) Upgrade() {
+	a.IsUpgraded = true
+	a.MaxUsers = a.MaxUsersAfterUpgrade
 }
 
-func (a *AdminAccount) GetInfo() {
-
+// GetInfo returns json encoded acc info for frontend
+func (a *AdminAccount) GetInfo() ([]byte, error) {
+	res := DashboardInfo{
+		Users:      a.Users,
+		IsUpgraded: a.IsUpgraded,
+		MaxUsers:   a.MaxUsers,
+	}
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return resJSON, nil
 }
+
+// IncrementUserCount is used by the iotdata handler to increment the users in our acc
 func (a *AdminAccount) IncrementUserCount() {
-
+	a.Users++
 }

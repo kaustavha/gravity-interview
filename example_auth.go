@@ -1,75 +1,82 @@
 package main
 
-import (
-	"encoding/json"
-	"net/http"
+// import (
+// 	"encoding/json"
+// 	"net/http"
 
-	"github.com/kaustavha/gravity-interview/src/authenticator"
-)
+// 	"github.com/kaustavha/gravity-interview/src/authenticator"
+// )
 
-// Example of what a login handler will now look like
-func ExampleLoginHandler(w http.ResponseWriter, r *http.Request) {
-	db := GetDBConn()
-	authenticator, err := authenticator.NewAuthenticator(
-		"accid",
-		"email",
-		"pass",
-		100,
-		[]byte("signingkey"),
-		db,
-	)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	loginHandler(authenticator, w, r)
-}
+// // ExampleLoginHandler Example of what a login handler will now look like
+// func ExampleLoginHandler(w http.ResponseWriter, r *http.Request) {
+// 	db := GetDBConn()
+// 	authenticator, err := authenticator.NewAuthenticator(
+// 		"accid",
+// 		"email",
+// 		"pass",
+// 		100,
+// 		[]byte("signingkey"),
+// 		db,
+// 	)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
+// 	loginHandler(authenticator, w, r)
+// }
 
-// Example of our login handler helper func
-func loginHandler(authenticator *authenticator.Authenticator, w http.ResponseWriter, r *http.Request) {
-	// get cookie
-	// if active user then update token deets internally and save
-	// else try to find in db and set in session
-	// else create default and set in session
+// // Example of our login handler helper func
+// func loginHandler(authenticator *authenticator.Authenticator, w http.ResponseWriter, r *http.Request) {
+// 	// get cookie
+// 	// if active user then update token deets internally and save
+// 	// else try to find in db and set in session
+// 	// else create default and set in session
 
-	c, err := r.Cookie(defaultCookieName)
-	if err != nil {
-		if err == http.ErrNoCookie {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	sessionToken := c.Value
+// 	c, err := r.Cookie(defaultCookieName)
 
-	if authenticator.IsAuthenticated(sessionToken) {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
+// 	if err == nil {
+// 		sessionToken := c.Value
+// 		if authenticator.IsAuthenticated(sessionToken) {
+// 			w.WriteHeader(http.StatusOK)
+// 			return
+// 		}
+// 	}
 
-	var creds Credentials
+// 	// if err != nil {
+// 	// 	if err == http.ErrNoCookie {
+// 	// 		w.WriteHeader(http.StatusUnauthorized)
+// 	// 		return
+// 	// 	}
+// 	// 	w.WriteHeader(http.StatusBadRequest)
+// 	// 	return
+// 	// }
 
-	err = json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		// If the structure of the body is wrong, return an HTTP error
-		return
-	}
+// 	// sessionToken := c.Value
+// 	// if authenticator.IsAuthenticated(sessionToken) {
+// 	// 	w.WriteHeader(http.StatusOK)
+// 	// 	return
+// 	// }
 
-	pass, err := authenticator.DecodeAndCheckCreds(creds.Password, creds.Email)
+// 	var creds Credentials
+// 	err = json.NewDecoder(r.Body).Decode(&creds)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-	}
+// 	// pass, err := authenticator.DecodeAndCheckCreds(creds.Password, creds.Email)
+// 	// if err != nil {
+// 	// 	w.WriteHeader(http.StatusUnauthorized)
+// 	// 	return
+// 	// }
 
-	acc := authenticator.Login(sessionToken, pass)
+// 	acc, err := authenticator.Login(sessionToken, creds.Email, creds.Password)
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    defaultCookieName,
-		Value:   acc.SessionToken,
-		Expires: acc.SessionExpiry,
-	})
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:    defaultCookieName,
+// 		Value:   acc.SessionToken,
+// 		Expires: acc.SessionExpiry,
+// 	})
 
-	w.WriteHeader(http.StatusOK)
-}
+// 	w.WriteHeader(http.StatusOK)
+// }

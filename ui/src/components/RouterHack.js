@@ -31,5 +31,6 @@ export default class RouterHack extends React.Component {
         if (loginSuccess) {
             return <Redirect to='/dashboard' push />;
         }
+        return <div/>
     }
 }

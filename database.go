@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/gravitational/trace"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -23,16 +24,25 @@ type DB struct {
 
 var db *DB
 
-func CreateDBConn() {
-	conn, err := gorm.Open("postgres",
-		"host="+dbhost+" "+
-			"port="+dbport+" "+
-			"user="+dbuser+" "+
-			"dbname="+dbname+" "+
-			"password="+dbpass+" "+
-			"sslmode="+dbsslmode)
+func CreateDBConn(conn *gorm.DB) {
+
+	db = &DB{db: conn}
+}
+
+func _createDBConn() {
+
+	optString := "host=" + dbhost + " " +
+		"port=" + dbport + " " +
+		"user=" + dbuser + " " +
+		"dbname=" + dbname + " " +
+		"password=" + dbpass + " " +
+		"sslmode=" + dbsslmode
+
+	fmt.Println(optString)
+
+	conn, err := gorm.Open("postgres", optString)
 	if err != nil {
-		panic(err)
+		trace.Wrap(err)
 	}
 
 	conn.AutoMigrate(&Metric{}, &AdminAccount{})
@@ -43,7 +53,7 @@ func CreateDBConn() {
 
 	db = &DB{db: conn}
 }
-s
+
 func GetDB() *DB {
 	return db
 }

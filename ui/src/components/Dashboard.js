@@ -22,6 +22,10 @@ export default class Dashboard extends React.Component {
             inProgress: false,
             currentlyUpdatingDB: false
         }
+
+        this.updateDashboard = this.updateDashboard.bind(this)
+        this.handleLogout = this.handleLogout.bind(this)
+        this.handleUpgrade = this.handleUpgrade.bind(this)
     }
 
     componentDidMount() {

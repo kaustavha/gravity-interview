@@ -27,11 +27,11 @@ func InitAuth() {
 	sessionTokens = []string{}
 	activeAccounts = make(map[string]AdminAccount)
 	sessionMap = make(map[string]string)
-	mySigningKey = []byte(defaultHashedPass)
+	mySigningKey = []byte(HashedPass)
 
 	expected = Credentials{
-		Email:    defaultEmail,
-		Password: defaultHashedPass,
+		Email:    Email,
+		Password: HashedPass,
 	}
 }
 
