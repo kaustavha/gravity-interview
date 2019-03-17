@@ -21,6 +21,14 @@ func GetNewMiddlewareManager(a interface{}) *MiddlewareManager {
 	}
 }
 
+func (m *MiddlewareManager) getWrappedLoginHandler(LoginHandler http.HandlerFunc) http.HandlerFunc {
+	return m.loggingMiddleware(m.cleanupExpiredTokensMiddleware(LoginHandler))
+}
+
+func (m *MiddlewareManager) getWrappedIOTDataHandler(IOTDataHandler http.HandlerFunc) http.HandlerFunc {
+	return m.loggingMiddleware(IOTDataHandler)
+}
+
 func (m *MiddlewareManager) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if found := m.a.IsAuthenticated(r); found {

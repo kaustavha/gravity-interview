@@ -20,7 +20,7 @@ const (
 type Metric struct {
 	gorm.Model
 	// AccountID is a unique UUID identifying the account
-	AccountID string `json:"account_id"`
+	AccountID string `json:"account_id" gorm:"primary_key;auto_increment:false"`
 	// UserID is a unique ID identityfing the user
 	// activity
 	UserID string `json:"user_id"`

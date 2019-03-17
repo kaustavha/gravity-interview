@@ -81,7 +81,7 @@ func main() {
 	defer GetDBConn().Close()
 	InitRoutes()
 
-	http.HandleFunc("/api/login", m.loggingMiddleware(a.LoginHandler))
+	http.HandleFunc("/api/login", m.getWrappedLoginHandler(a.LoginHandler))
 	http.HandleFunc("/api/authcheck", m.applyMiddlewares(AuthcheckHandler))
 	http.HandleFunc("/api/logout", m.applyMiddlewares(a.LogoutHandler))
 
