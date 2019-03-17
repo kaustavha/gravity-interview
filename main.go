@@ -73,7 +73,7 @@ func main() {
 	// Setup DB
 	db, err := createDBConn()
 	if err != nil {
-		trace.Fatalf("Error connecting to Database %v", err)
+		trace.Fatalf("error connecting to Database %v", err)
 		fmt.Println(err.Error())
 	}
 
@@ -89,7 +89,7 @@ func main() {
 		db,
 	)
 	if err != nil {
-		trace.Fatalf("Error setting up Database in Authenticator %v", err)
+		trace.Fatalf("error setting up Database in Authenticator %v", err)
 		fmt.Println(err.Error())
 	}
 
@@ -128,6 +128,6 @@ func main() {
 
 	err = http.ListenAndServeTLS(port, pemPath, keyPath, nil)
 	if err != nil {
-		trace.Fatalf("ListenAndServe: %v", err)
+		trace.Fatalf("listenAndServe: %v", err)
 	}
 }

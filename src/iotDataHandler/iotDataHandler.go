@@ -93,7 +93,7 @@ func (i *IOTDataHandler) IOTDataHandler(w http.ResponseWriter, r *http.Request) 
 
 	if len(splitToken) == 1 {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(trace.AccessDenied("Incoming token is empty").Error()))
+		w.Write([]byte(trace.AccessDenied("incoming token is empty").Error()))
 		return
 	}
 

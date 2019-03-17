@@ -55,7 +55,7 @@ func (db *IotDataHandlerDB) findMetric(m *Metric) (*Metric, error) {
 		UserID:    m.UserID,
 	}).Find(&metric)
 	if record.RecordNotFound() {
-		return nil, trace.NotFound("RecordNotFound")
+		return nil, trace.NotFound("metric not found in db")
 	}
 
 	// All unahndled errors e.g. db conn errs
